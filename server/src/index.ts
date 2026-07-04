@@ -905,7 +905,7 @@ const app = new Elysia()
       }, 1500);
     },
   })
-  .get("/", () => "Draw Game Server is running!")
+  .get("/", () => "Guess My Mess Server is running!")
   .listen({ port: 3001, hostname: "0.0.0.0" });
 
 setAppServer(app.server);

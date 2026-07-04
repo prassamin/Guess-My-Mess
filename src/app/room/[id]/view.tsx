@@ -14,6 +14,7 @@ import AuthBlock from "@/components/lobby/AuthBlock";
 import { useRoomStore } from "@/store/roomStore";
 import { useRouter } from "@bprogress/next";
 import { playAudio } from "@/utils/audio";
+import { NEXT_PUBLIC_SOCKET_URL } from "@/config/env";
 
 export default function RoomView({ roomId }: { roomId: string }) {
   const router = useRouter();
@@ -112,7 +113,7 @@ export default function RoomView({ roomId }: { roomId: string }) {
   useEffect(() => {
     if (!userId || showJoinModal) return;
 
-    const url = new URL("ws://localhost:3001/ws");
+    const url = new URL(`${NEXT_PUBLIC_SOCKET_URL}/ws`);
     url.searchParams.append("roomId", roomId);
     url.searchParams.append("userId", userId);
     url.searchParams.append("name", userName || "");
