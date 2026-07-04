@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Removed Next.js default dark theme so our light theme takes over! */
+button, a {
+  @apply cursor-pointer;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  &::-webkit-scrollbar,
+  &::-webkit-scrollbar-track {
+    display: none;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility scrollbar-auto {
+  scrollbar-width: auto;
+  -ms-overflow-style: auto;
+
+  &::-webkit-scrollbar,
+  &::-webkit-scrollbar-track {
+    @apply block;
+  }
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+    border: 3px solid #e2e8f0;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #94a3b8;
+    border-radius: 10px;
+    border: 3px solid #f1f5f9;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+  }
+}
+
+@utility text-stroke-logo {
+  text-shadow: -2px -2px 0 #1f2937, 2px -2px 0 #1f2937, -2px 2px 0 #1f2937, 2px 2px 0 #1f2937, 0 4px 0 #1f2937;
+  @media (min-width: 768px) {
+    text-shadow: -3px -3px 0 #1f2937, 3px -3px 0 #1f2937, -3px 3px 0 #1f2937, 3px 3px 0 #1f2937, 0 8px 0 #1f2937;
+  }
+}
+
+@utility text-stroke-logo-sm {
+  text-shadow: -1.5px -1.5px 0 #1f2937, 1.5px -1.5px 0 #1f2937, -1.5px 1.5px 0 #1f2937, 1.5px 1.5px 0 #1f2937, 0 3px 0 #1f2937;
+  @media (min-width: 768px) {
+    text-shadow: -2px -2px 0 #1f2937, 2px -2px 0 #1f2937, -2px 2px 0 #1f2937, 2px 2px 0 #1f2937, 0 4px 0 #1f2937;
+  }
+}
+
+@utility text-stroke-md {
+  text-shadow: -1px -1px 0 #1f2937, 1px -1px 0 #1f2937, -1px 1px 0 #1f2937, 1px 1px 0 #1f2937, 0 3px 0 #1f2937;
+  @media (min-width: 640px) {
+    text-shadow: -2px -2px 0 #1f2937, 2px -2px 0 #1f2937, -2px 2px 0 #1f2937, 2px 2px 0 #1f2937, 0 6px 0 #1f2937;
+  }
+}
+
+@utility text-stroke-sm {
+  text-shadow: -0.5px -0.5px 0 #1f2937, 0.5px -0.5px 0 #1f2937, -0.5px 0.5px 0 #1f2937, 0.5px 0.5px 0 #1f2937, 0 2px 0 #1f2937;
+  @media (min-width: 640px) {
+    text-shadow: -1.5px -1.5px 0 #1f2937, 1.5px -1.5px 0 #1f2937, -1.5px 1.5px 0 #1f2937, 1.5px 1.5px 0 #1f2937, 0 4px 0 #1f2937;
+  }
+}
+
+@utility text-stroke-xs {
+  text-shadow: -0.5px -0.5px 0 #1f2937, 0.5px -0.5px 0 #1f2937, -0.5px 0.5px 0 #1f2937, 0.5px 0.5px 0 #1f2937, 0 1px 0 #1f2937;
+  @media (min-width: 640px) {
+    text-shadow: -1px -1px 0 #1f2937, 1px -1px 0 #1f2937, -1px 1px 0 #1f2937, 1px 1px 0 #1f2937, 0 2px 0 #1f2937;
+  }
 }
