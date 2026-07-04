@@ -906,49 +906,6 @@ const app = new Elysia()
     },
   })
   .get("/", () => "Draw Game Server is running!")
-  .get("/api/room/:id", async ({ params, set }) => {
-    try {
-      const room = await redis.get(`room:${params.id}`);
-      if (room) {
-        return { exists: true };
-      } else {
-        set.status = 404;
-        return { exists: false };
-      }
-    } catch {
-      set.status = 500;
-      return { exists: false, error: "Server error" };
-    }
-  })
-  .get("/api/rooms", async ({ set }) => {
-    try {
-      const keys = await redis.keys("room:*");
-      if (!keys || keys.length === 0) return { rooms: [] };
-
-      // Use mget to fetch all room objects in one go
-      const roomsData = await redis.mget(...keys);
-
-      const publicRooms = roomsData
-        .filter(
-          (r: any) => r && r.status === "waiting" && r.players?.length > 0,
-        )
-        .map((r: any) => ({
-          id: r.id,
-          hostId: r.hostId,
-          playersCount: r.players?.length || 0,
-          maxPlayers: r.settings?.maxPlayers || 8,
-          settings: r.settings,
-          players:
-            r.players?.map((p: any) => ({ name: p.name, avatar: p.avatar })) ||
-            [],
-        }));
-
-      return { rooms: publicRooms };
-    } catch {
-      set.status = 500;
-      return { error: "Failed to fetch rooms" };
-    }
-  })
   .listen({ port: 3001, hostname: "0.0.0.0" });
 
 setAppServer(app.server);
