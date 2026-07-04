@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  guess-my-mess:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: guess-my-mess-app
+    restart: always
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    environment:
+      # Automatically picked up by Coolify, or you can hardcode/reference them here
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+      - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
