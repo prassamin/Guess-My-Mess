@@ -142,15 +142,16 @@ export default function ChatSidebar() {
 
         {/* Active Polls */}
         {Object.entries(kickVotes).map(([targetId, voters]) => {
-          if (!voters || voters.length === 0) return null;
+          if (!voters || (voters as string[])?.length === 0) return null;
 
-          const targetPlayer = players.find((p) => p.id === targetId);
+          const targetPlayer = players.find((p: any) => p.id === targetId);
           if (!targetPlayer) return null;
 
           const noVoters = kickVotesNo[targetId] || [];
 
           const hasVoted = currentUserId
-            ? voters.includes(currentUserId) || noVoters.includes(currentUserId)
+            ? (voters as string[])?.includes(currentUserId) ||
+              noVoters.includes(currentUserId)
             : false;
           const votesNeeded = Math.ceil(players.length / 2);
           const isTarget = currentUserId === targetId;
@@ -175,7 +176,7 @@ export default function ChatSidebar() {
                   <div
                     className="bg-[#4ade80] h-full transition-all duration-500 ease-out"
                     style={{
-                      width: `${Math.min(100, (voters?.length / votesNeeded) * 100)}%`,
+                      width: `${Math.min(100, ((voters as string[])?.length / votesNeeded) * 100)}%`,
                     }}
                   />
                 </div>
@@ -192,7 +193,7 @@ export default function ChatSidebar() {
 
               <div className="flex justify-between font-black text-[#1f2937] text-[10px] sm:text-xs mb-3 sm:mb-4 uppercase relative z-10 px-1">
                 <span>
-                  {voters?.length}/{votesNeeded} Yes
+                  {(voters as string[])?.length}/{votesNeeded} Yes
                 </span>
                 <span>
                   {noVoters.length}/{votesNeeded} No
