@@ -1,0 +1,216 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase/client";
+import SkyBackground from "@/components/SkyBackground";
+
+import RoomModal from "@/components/lobby/RoomModal";
+import Header from "@/components/lobby/Header";
+import LogoBlock from "@/components/lobby/LogoBlock";
+import AuthBlock from "@/components/lobby/AuthBlock";
+import CreditBadge from "@/components/lobby/CreditBadge";
+import { createOAuth } from "@/lib/supabase/auth";
+
+export default function HomeView({ initialUser }: { initialUser: any }) {
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [user, setUser] = useState<any>(initialUser);
+  const [isClient, setIsClient] = useState(false);
+
+  const [name, setName] = useState(initialUser?.user_metadata?.full_name || "");
+  const [avatarSeed, setAvatarSeed] = useState("");
+
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [modalMode, setModalMode] = useState<"menu" | "create">("menu");
+
+  useEffect(() => {
+    setIsClient(true);
+
+    // Set seed logic
+    let seedSet = false;
+    if (initialUser?.user_metadata?.avatar_url) {
+      const storedSeed = initialUser.user_metadata.avatar_url.split("seed=")[1];
+      if (storedSeed) {
+        setAvatarSeed(storedSeed);
+        seedSet = true;
+      }
+    }
+
+    // If no user from server, check guest
+    if (!initialUser) {
+      const guestStr = localStorage.getItem("draw_guest_user");
+      if (guestStr) {
+        const guest = JSON.parse(guestStr);
+        setUser(guest);
+        setName(guest.user_metadata.full_name);
+        if (guest.user_metadata?.avatar_url) {
+          const storedSeed = guest.user_metadata.avatar_url.split("seed=")[1];
+          if (storedSeed) {
+            setAvatarSeed(storedSeed);
+            seedSet = true;
+          }
+        }
+      }
+    }
+
+    if (!seedSet) {
+      setAvatarSeed(Math.random().toString(36).substring(7));
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      if (currentUser) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username, avatar")
+          .eq("id", currentUser.id)
+          .single();
+
+        setUser({
+          ...currentUser,
+          username: profile?.username,
+          avatar: profile?.avatar,
+        });
+        if (currentUser.user_metadata?.full_name) {
+          setName(currentUser.user_metadata.full_name);
+        }
+      } else {
+        // Only clear if we actually logged out from a real session
+        setUser((prev: any) => (prev?.is_anonymous ? prev : null));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [initialUser]);
+
+  const handleGoogleLogin = () =>
+    createOAuth("google", {
+      onStarting() {
+        setGoogleLoading(true);
+      },
+      onError(error) {
+        console.error("Error logging in:", error);
+        setGoogleLoading(false);
+      },
+      redirectTo: `${window.location.origin}/`,
+    });
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("draw_guest_user");
+    setUser(null);
+    setName("");
+    setAvatarSeed(Math.random().toString(36).substring(7));
+  };
+
+  const handlePlay = async () => {
+    if (!name.trim()) return;
+    setGuestLoading(true);
+
+    // Always prioritize the avatar from the profiles table.
+    // Guests or anonymous users will fall back to the dicebear seed.
+    const finalAvatarUrl =
+      user?.avatar ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      await supabase.auth.updateUser({
+        data: {
+          full_name: name.trim(),
+          avatar_url: finalAvatarUrl,
+        },
+      });
+      sessionStorage.setItem("previouslyConfirmed", "true");
+      setGuestLoading(false);
+      setModalMode("menu");
+      setShowRoomModal(true);
+    } else {
+      const fakeUser = {
+        id: "guest-" + Math.random().toString(36).substring(2, 15),
+        is_anonymous: true,
+        user_metadata: {
+          full_name: name.trim(),
+          avatar_url: finalAvatarUrl,
+        },
+      };
+
+      localStorage.setItem("draw_guest_user", JSON.stringify(fakeUser));
+      sessionStorage.setItem("previouslyConfirmed", "true");
+      setUser(fakeUser);
+      setGuestLoading(false);
+      setModalMode("menu");
+      setShowRoomModal(true);
+    }
+  };
+
+  if (!isClient) {
+    // Return a server-rendered shell that matches the initial layout but without client state.
+    return (
+      <main className="min-h-screen lg:h-screen w-full overflow-x-hidden lg:overflow-hidden overflow-y-auto flex flex-col font-sans relative">
+        <SkyBackground />
+        <Header user={initialUser} />
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 sm:gap-12 lg:gap-24 p-4 sm:p-6 pb-12 sm:pb-16 lg:p-10 min-h-0 relative z-10 w-full max-w-350 mx-auto">
+          <LogoBlock user={initialUser} onPlayClick={() => {}} />
+          <AuthBlock
+            user={initialUser}
+            name={initialUser?.user_metadata?.full_name || ""}
+            setName={() => {}}
+            avatarSeed={""}
+            setAvatarSeed={() => {}}
+            handlePlay={() => {}}
+            handleGoogleLogin={() => {}}
+            handleLogout={() => {}}
+            guestLoading={false}
+            googleLoading={false}
+          />
+        </div>
+        <CreditBadge />
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen lg:h-screen w-full overflow-x-hidden lg:overflow-hidden overflow-y-auto flex flex-col font-sans relative">
+      <SkyBackground />
+
+      <Header user={user} />
+
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 sm:gap-12 lg:gap-24 p-4 sm:p-6 pb-12 sm:pb-16 lg:p-10 min-h-0 relative z-10 w-full max-w-350 mx-auto">
+        <LogoBlock
+          user={user}
+          onPlayClick={() => {
+            setModalMode("menu");
+            setShowRoomModal(true);
+          }}
+        />
+
+        <AuthBlock
+          user={user}
+          name={name}
+          setName={setName}
+          avatarSeed={avatarSeed}
+          setAvatarSeed={setAvatarSeed}
+          handlePlay={handlePlay}
+          handleGoogleLogin={handleGoogleLogin}
+          handleLogout={handleLogout}
+          guestLoading={guestLoading}
+          googleLoading={googleLoading}
+        />
+      </div>
+
+      <RoomModal
+        isOpen={showRoomModal}
+        onClose={() => setShowRoomModal(false)}
+        user={user}
+        initialMode={modalMode}
+      />
+
+      <CreditBadge />
+    </main>
+  );
+}
