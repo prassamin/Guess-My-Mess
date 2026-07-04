@@ -8,12 +8,8 @@ FROM base AS deps
 WORKDIR /app
 
 # Install frontend dependencies
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN if [ -f package-lock.json ]; then npm ci; \
-  elif [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else npm install; \
-  fi
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
 
 # Install backend dependencies
 WORKDIR /app/server
@@ -27,7 +23,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN bun run build
 
 # 3. Production runner
 FROM base AS runner
