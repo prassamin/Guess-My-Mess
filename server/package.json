@@ -1,0 +1,24 @@
+{
+  "name": "server",
+  "version": "1.0.50",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.4.2",
+    "@supabase/supabase-js": "^2.110.0",
+    "@upstash/redis": "^1.38.0",
+    "elysia": "^1.4.29"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "@types/bun": "latest"
+  },
+  "module": "src/index.js",
+  "type": "module",
+  "private": true,
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
