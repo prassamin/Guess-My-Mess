@@ -1,6 +1,6 @@
 import { Users, Copy, Play, XOctagon } from "lucide-react";
 import { useState } from "react";
-import { useRoomStore } from "@/store/roomStore";
+import { useRoomStore } from "@/store/room-store";
 import { useRouter } from "@bprogress/next";
 
 export default function WaitingLobby({

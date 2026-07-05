@@ -1,30 +1,39 @@
+import { createOAuth } from "@/lib/supabase/auth";
+import { supabase } from "@/lib/supabase/client";
+import { useAppStore } from "@/store/app-store";
 import { Loader2, LogOut, Dices } from "lucide-react";
+import { useState } from "react";
 
 interface AuthBlockProps {
-  user: any;
   name: string;
   setName: (name: string) => void;
   avatarSeed: string;
   setAvatarSeed: (seed: string) => void;
   handlePlay: () => void;
-  handleGoogleLogin: () => void;
-  handleLogout: () => void;
   guestLoading: boolean;
-  googleLoading: boolean;
+  user: any;
 }
 
 export default function AuthBlock({
-  user,
   name,
   setName,
   avatarSeed,
   setAvatarSeed,
   handlePlay,
-  handleGoogleLogin,
-  handleLogout,
   guestLoading,
-  googleLoading,
+  user,
 }: AuthBlockProps) {
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { setUser } = useAppStore();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("draw_guest_user");
+    setUser(null);
+    setName("");
+    setAvatarSeed(Math.random().toString(36).substring(7));
+  };
+
   return (
     <div className="w-full max-w-[92vw] sm:max-w-sm md:max-w-md lg:w-105 bg-white border-2 sm:border-[5px] border-[#94a3b8] rounded-3xl sm:rounded-[2.5rem] p-4 sm:p-6 flex flex-col shadow-[0_6px_0_#94a3b8] sm:shadow-[0_12px_0_#94a3b8] relative overflow-hidden mx-auto">
       <div className="absolute top-0 inset-x-0 h-4 sm:h-6 bg-slate-50/80 rounded-t-3xl sm:rounded-t-[2.5rem] pointer-events-none z-0" />
@@ -133,7 +142,18 @@ export default function AuthBlock({
           </div>
 
           <button
-            onClick={handleGoogleLogin}
+            onClick={() =>
+              createOAuth("google", {
+                onStarting() {
+                  setGoogleLoading(true);
+                },
+                onError(error) {
+                  console.error("Error logging in:", error);
+                  setGoogleLoading(false);
+                },
+                redirectTo: `${window.location.origin}/auth/callback/?next=${window.location.pathname}`,
+              })
+            }
             disabled={googleLoading || guestLoading}
             className="relative w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-white border-2 sm:border-4 border-[#cbd5e1] shadow-[0_2px_0_#94a3b8] sm:shadow-[0_4px_0_#94a3b8] active:shadow-[0_0px_0_#94a3b8] active:translate-y-1 transition-all flex items-center justify-center overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed group"
           >

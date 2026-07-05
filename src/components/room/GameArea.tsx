@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, CheckCircle } from "lucide-react";
 import DrawingCanvas from "./DrawingCanvas";
-import { useRoomStore } from "@/store/roomStore";
+import { useRoomStore } from "@/store/room-store";
+import { useAppStore } from "@/store/app-store";
 import { playAudio } from "@/utils/audio";
 
 export default function GameArea() {
-  const { user, roomState, ws, wordChoices, currentWord, revealedWord } =
+  const { user } = useAppStore();
+  const { roomState, ws, wordChoices, currentWord, revealedWord } =
     useRoomStore();
   const userId = user?.id;
   const [now, setNow] = useState(0);
@@ -22,15 +24,17 @@ export default function GameArea() {
   const drawer = gs ? roomState?.players?.[gs.currentTurnIndex] : null;
   const isDrawer = drawer?.id === userId;
 
-  const timeLeft = gs ? Math.max(0, Math.ceil((gs.turnEndTime - now) / 1000)) : 0;
+  const timeLeft = gs
+    ? Math.max(0, Math.ceil((gs.turnEndTime - now) / 1000))
+    : 0;
   const prevTimeLeftRef = useRef(timeLeft);
   const prevPhaseRef = useRef(gs?.phase);
 
   useEffect(() => {
     if (
-      (gs?.phase === "drawing" || gs?.phase === "choosing") && 
-      timeLeft <= 10 && 
-      timeLeft > 0 && 
+      (gs?.phase === "drawing" || gs?.phase === "choosing") &&
+      timeLeft <= 10 &&
+      timeLeft > 0 &&
       timeLeft !== prevTimeLeftRef.current
     ) {
       playAudio("tick");
@@ -73,7 +77,8 @@ export default function GameArea() {
             <div className="flex flex-row flex-wrap items-center justify-center  gap-3 sm:gap-6">
               {wordChoices.map((word, idx) => {
                 // Dynamically distribute hues based on total number of choices
-                const hue = (idx * (360 / Math.max(1, wordChoices.length))) % 360;
+                const hue =
+                  (idx * (360 / Math.max(1, wordChoices.length))) % 360;
                 const bgColor = `hsl(${hue}, 85%, 65%)`;
                 const shadowColor = `hsl(${hue}, 85%, 40%)`;
 
@@ -89,7 +94,7 @@ export default function GameArea() {
                     className="order-4 h-fit p-5 sm:border-[6px] border-2 rounded-2xl sm:rounded-3xl active:translate-y-1 sm:active:translate-y-2 active:shadow-none transition-all flex flex-col items-center justify-center relative overflow-hidden group hover:-translate-y-2 hover:shadow-[0_12px_0_rgba(0,0,0,0.2)]"
                   >
                     <div className="absolute top-0 inset-x-0 h-4 sm:h-6 bg-white/30 rounded-t-xl sm:rounded-t-2xl pointer-events-none" />
-                    
+
                     <span
                       className="font-black text-white text-lg sm:text-3xl uppercase tracking-widest relative z-10 transition-transform text-center leading-tight sm:leading-none wrap-break-word"
                       style={textStroke}
@@ -151,9 +156,15 @@ export default function GameArea() {
 
     let wordCountsStr = "";
     if (isDrawer && currentWord) {
-      wordCountsStr = currentWord.split(" ").map(w => w.length).join(", ");
+      wordCountsStr = currentWord
+        .split(" ")
+        .map((w) => w.length)
+        .join(", ");
     } else if (gs.lastSentHint) {
-      wordCountsStr = gs.lastSentHint.split("   ").map((w: any) => w.replace(/ /g, "").length).join(", ");
+      wordCountsStr = gs.lastSentHint
+        .split("   ")
+        .map((w: any) => w.replace(/ /g, "").length)
+        .join(", ");
     } else {
       wordCountsStr = String(gs.wordLength);
     }
@@ -230,7 +241,9 @@ export default function GameArea() {
             </div>
             <div className="px-2 sm:px-4 flex items-center justify-center relative">
               <Clock className="w-3 h-3 sm:w-6 sm:h-6 text-[#1f2937] absolute opacity-20" />
-              <span className={`font-black text-[#1f2937] text-xs sm:text-2xl relative z-10 ${timeLeft <= 10 ? 'animate-pulse text-red-600' : ''}`}>
+              <span
+                className={`font-black text-[#1f2937] text-xs sm:text-2xl relative z-10 ${timeLeft <= 10 ? "animate-pulse text-red-600" : ""}`}
+              >
                 {timeLeft}
               </span>
             </div>
@@ -254,11 +267,13 @@ export default function GameArea() {
           className="font-black text-[#1f2937] text-lg sm:text-3xl uppercase tracking-widest mb-1 sm:mb-2"
           style={textStroke}
         >
-          <span className={(gs as any).drawerLeft ? "text-[#f87171]" : "text-white"}>
+          <span
+            className={(gs as any).drawerLeft ? "text-[#f87171]" : "text-white"}
+          >
             {(gs as any).drawerLeft ? "The Drawer Left!" : "The word was"}
           </span>
         </h2>
-        
+
         {revealedWord && !(gs as any).drawerLeft && (
           <h1
             className="font-black text-[#4ade80] text-3xl sm:text-7xl uppercase tracking-widest mb-4 sm:mb-10 text-center"

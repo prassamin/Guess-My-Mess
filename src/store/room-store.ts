@@ -1,14 +1,5 @@
 import { create } from 'zustand';
 
-interface User {
-  id: string;
-  user_metadata?: {
-    full_name?: string;
-    avatar_url?: string;
-  };
-  [key: string]: any;
-}
-
 interface RoomStore {
   // App state
   gameStarted: boolean;
@@ -38,10 +29,6 @@ interface RoomStore {
   
   revealedWord: string;
   setRevealedWord: (word: string) => void;
-
-  // Auth/User state
-  user: User | null;
-  setUser: (user: User | null) => void;
 
   reset: () => void;
 }
@@ -77,9 +64,6 @@ export const useRoomStore = create<RoomStore>((set) => ({
 
   revealedWord: "",
   setRevealedWord: (word) => set({ revealedWord: word }),
-
-  user: null,
-  setUser: (user) => set({ user }),
 
   reset: () => set({
     gameStarted: false,

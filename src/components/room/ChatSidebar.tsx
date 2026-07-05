@@ -1,9 +1,11 @@
 import { MessageCircle, Send, UserX } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useRoomStore } from "@/store/roomStore";
+import { useAppStore } from "@/store/app-store";
+import { useRoomStore } from "@/store/room-store";
 
 export default function ChatSidebar() {
-  const { user, chatMessages: messages, roomState, ws } = useRoomStore();
+  const { user } = useAppStore();
+  const { chatMessages: messages, roomState, ws } = useRoomStore();
   const currentUserId = user?.id;
 
   const kickVotes = roomState?.kickVotes || {};
@@ -237,7 +239,7 @@ export default function ChatSidebar() {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 min-w-0 bg-white text-[#1f2937] placeholder:text-gray-400 font-black text-xs sm:text-lg rounded-xl px-3 py-2 sm:px-4 sm:py-3 outline-none border-2 sm:border-[3px] border-[#94a3b8] shadow-inner uppercase relative z-10 transition-all"
+          className="flex-1 min-w-0 bg-white text-[#1f2937] placeholder:text-gray-400 font-black text-xs sm:text-lg rounded-xl px-3 py-2 sm:px-4 sm:py-3 outline-none border-2 sm:border-[3px] border-[#94a3b8] shadow-inner relative z-10 transition-all"
         />
         <button
           onClick={handleSend}

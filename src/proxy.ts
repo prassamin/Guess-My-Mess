@@ -14,6 +14,11 @@ export async function proxy(request: NextRequest) {
 
   const supabaseResponse = await updateSession(request);
 
+  // If updateSession returned a redirect (e.g. for ?code= oauth exchange), return it immediately!
+  if (supabaseResponse.status >= 300 && supabaseResponse.status < 400) {
+    return supabaseResponse;
+  }
+
   const response = NextResponse.next({
     request: {
       headers: headers,

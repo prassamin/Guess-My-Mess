@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { Users, Crown, Paintbrush, UserX, MicOff, Mic } from "lucide-react";
-import { useRoomStore } from "@/store/roomStore";
+import { useAppStore } from "@/store/app-store";
+import { useRoomStore } from "@/store/room-store";
 
 export default function PlayersSidebar() {
-  const { user, roomState, mutedUserIds, setMutedUserIds, ws } = useRoomStore();
+  const { user } = useAppStore();
+  const { roomState, mutedUserIds, setMutedUserIds, ws } = useRoomStore();
   const currentUserId = user?.id;
   const players = roomState?.players || [];
   const hostId = roomState?.hostId;
-  const drawerId = (roomState?.gameState?.phase === 'drawing' || roomState?.gameState?.phase === 'choosing') ? roomState?.players[roomState.gameState.currentTurnIndex]?.id : undefined;
+  const drawerId =
+    roomState?.gameState?.phase === "drawing" ||
+    roomState?.gameState?.phase === "choosing"
+      ? roomState?.players[roomState.gameState.currentTurnIndex]?.id
+      : undefined;
   const serverMutedUsers = roomState?.serverMutedUsers || [];
 
   const handleKick = (targetId: string) => {
@@ -29,8 +35,10 @@ export default function PlayersSidebar() {
   };
 
   const handleToggleMute = (targetId: string) => {
-    setMutedUserIds((prev: string[]) => 
-      prev.includes(targetId) ? prev.filter((id: string) => id !== targetId) : [...prev, targetId]
+    setMutedUserIds((prev: string[]) =>
+      prev.includes(targetId)
+        ? prev.filter((id: string) => id !== targetId)
+        : [...prev, targetId],
     );
   };
 

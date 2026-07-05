@@ -11,18 +11,17 @@ import WaitingLobby from "@/components/room/WaitingLobby";
 import GameArea from "@/components/room/GameArea";
 
 import AuthBlock from "@/components/lobby/AuthBlock";
-import { useRoomStore } from "@/store/roomStore";
+import { useRoomStore } from "@/store/room-store";
 import { useRouter } from "@bprogress/next";
 import { playAudio } from "@/utils/audio";
 import { NEXT_PUBLIC_SOCKET_URL } from "@/config/env";
+import { useAppStore } from "@/store/app-store";
 
 export default function RoomView({ roomId }: { roomId: string }) {
   const router = useRouter();
 
   // App state from store
   const {
-    user,
-    setUser,
     gameStarted,
     setGameStarted,
     setWs,
@@ -34,6 +33,7 @@ export default function RoomView({ roomId }: { roomId: string }) {
     setRevealedWord,
     reset,
   } = useRoomStore();
+  const { user, setUser } = useAppStore();
 
   // Auth state
   const [authChecking, setAuthChecking] = useState(true);
@@ -41,7 +41,6 @@ export default function RoomView({ roomId }: { roomId: string }) {
   const [name, setName] = useState("");
   const [avatarSeed, setAvatarSeed] = useState("");
   const [guestLoading, setGuestLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     reset(); // Reset global store state on mount
@@ -177,18 +176,6 @@ export default function RoomView({ roomId }: { roomId: string }) {
     };
   }, [userId, userName, userAvatar, showJoinModal, roomId]);
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/room/${roomId}` },
-    });
-    if (error) {
-      console.error("Error logging in:", error);
-      setGoogleLoading(false);
-    }
-  };
-
   const handlePlay = async () => {
     if (!name.trim()) return;
     setGuestLoading(true);
@@ -240,13 +227,6 @@ export default function RoomView({ roomId }: { roomId: string }) {
     setGuestLoading(false);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("draw_guest_user");
-    setUser(null);
-    setShowJoinModal(true);
-  };
-
   const textStroke = {
     textShadow:
       "-2px -2px 0 #1f2937, 2px -2px 0 #1f2937, -2px 2px 0 #1f2937, 2px 2px 0 #1f2937, 0 4px 0 #1f2937",
@@ -284,10 +264,7 @@ export default function RoomView({ roomId }: { roomId: string }) {
             avatarSeed={avatarSeed}
             setAvatarSeed={setAvatarSeed}
             handlePlay={handlePlay}
-            handleGoogleLogin={handleGoogleLogin}
-            handleLogout={handleLogout}
             guestLoading={guestLoading}
-            googleLoading={googleLoading}
           />
         </div>
       )}

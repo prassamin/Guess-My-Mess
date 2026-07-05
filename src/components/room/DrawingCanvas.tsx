@@ -7,7 +7,7 @@ import {
   Palette,
   Undo,
 } from "lucide-react";
-import { useRoomStore } from "@/store/roomStore";
+import { useRoomStore } from "@/store/room-store";
 
 interface DrawingCanvasProps {
   isDrawer: boolean;
@@ -64,15 +64,26 @@ const floodFill = (
   const cy = Math.floor(y);
   if (cx < 0 || cy < 0 || cx >= w || cy >= h) return;
 
-  const idx = (cy * w + cx) * 4;
-  const startR = data[idx];
-  const startG = data[idx + 1];
-  const startB = data[idx + 2];
-  const startA = data[idx + 3];
+  const startIdx = (cy * w + cx) * 4;
+  const startR = data[startIdx];
+  const startG = data[startIdx + 1];
+  const startB = data[startIdx + 2];
+  const startA = data[startIdx + 3];
 
   const fc = hexToRgba(fillColorStr);
+  
+  // If the target pixel is already the fill color exactly, no need to fill
+  if (fc[0] === startR && fc[1] === startG && fc[2] === startB && startA === 255) {
+    return;
+  }
+
   const tolerance = 50;
   const colorMatch = (i: number) => {
+    // If the pixel is already strictly our fill color, it's been visited and changed.
+    // This absolutely prevents infinite loops.
+    if (data[i] === fc[0] && data[i+1] === fc[1] && data[i+2] === fc[2] && data[i+3] === 255) {
+      return false;
+    }
     return (
       Math.abs(data[i] - startR) <= tolerance &&
       Math.abs(data[i + 1] - startG) <= tolerance &&
@@ -80,9 +91,6 @@ const floodFill = (
       Math.abs(data[i + 3] - startA) <= tolerance
     );
   };
-
-  if (colorMatch(0) && fc[0] === startR && fc[1] === startG && fc[2] === startB)
-    return;
 
   const stack = [[cx, cy]];
 
@@ -144,16 +152,29 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
   const [brushSize, setBrushSize] = useState(5);
   const [tool, setTool] = useState<"brush" | "fill" | "eraser">("brush");
   const [showPalette, setShowPalette] = useState(false);
+  const [showSlider, setShowSlider] = useState(false);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
+  const drawQueue = useRef<any[]>([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (drawQueue.current.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "draw_batch", lines: drawQueue.current }));
+        drawQueue.current = [];
+      }
+    }, 30); // ~33fps batching for smooth network performance
+    return () => clearInterval(interval);
+  }, [ws]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
 
     const ctx = canvas.getContext("2d");
     if (ctx) {
@@ -190,6 +211,24 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
         ctx.moveTo(data.x0 * canvas.width, data.y0 * canvas.height);
         ctx.lineTo(data.x1 * canvas.width, data.y1 * canvas.height);
         ctx.stroke();
+      } else if (data.type === "draw_batch") {
+        if (isDrawer) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext("2d");
+        if (!canvas || !ctx) return;
+        
+        const dpr = window.devicePixelRatio || 1;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        for (const line of data.lines) {
+          ctx.strokeStyle = line.color;
+          ctx.lineWidth = line.size * dpr;
+          ctx.beginPath();
+          ctx.moveTo(line.x0 * canvas.width, line.y0 * canvas.height);
+          ctx.lineTo(line.x1 * canvas.width, line.y1 * canvas.height);
+          ctx.stroke();
+        }
       } else if (data.type === "clear_canvas") {
         if (isDrawer) return;
         const canvas = canvasRef.current;
@@ -316,33 +355,26 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
 
     const currentPos = getCoordinates(e, canvas);
 
+    const dpr = window.devicePixelRatio || 1;
     const strokeColor = tool === "eraser" ? "#ffffff" : color;
 
     ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = brushSize;
+    ctx.lineWidth = brushSize * dpr;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.moveTo(
-      lastPos.current.x * canvas.width,
-      lastPos.current.y * canvas.height,
-    );
+    ctx.moveTo(lastPos.current.x * canvas.width, lastPos.current.y * canvas.height);
     ctx.lineTo(currentPos.x * canvas.width, currentPos.y * canvas.height);
     ctx.stroke();
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({
-          type: "draw",
-          x0: lastPos.current.x,
-          y0: lastPos.current.y,
-          x1: currentPos.x,
-          y1: currentPos.y,
-          color: strokeColor,
-          size: brushSize,
-        }),
-      );
-    }
+    drawQueue.current.push({
+      x0: lastPos.current.x,
+      y0: lastPos.current.y,
+      x1: currentPos.x,
+      y1: currentPos.y,
+      color: strokeColor,
+      size: brushSize,
+    });
 
     lastPos.current = currentPos;
   };
@@ -392,7 +424,7 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
   };
 
   return (
-    <div className="flex-1 bg-white rounded-none lg:rounded-b-4xl shadow-none lg:shadow-[0_12px_0_#94a3b8] flex flex-col overflow-hidden min-h-0 border-b-2 lg:border-[6px] border-[#94a3b8] border-x-0 lg:border-x-[6px] lg:border-t-0 relative w-full h-full">
+    <div className="flex-1 bg-white rounded-none lg:rounded-b-4xl shadow-none lg:shadow-[0_12px_0_#94a3b8] flex flex-col min-h-0 border-b-2 lg:border-[6px] border-[#94a3b8] border-x-0 lg:border-x-[6px] lg:border-t-0 relative w-full h-full">
       <div
         className={`flex-1 min-h-0 bg-white flex relative ${isDrawer ? (tool === "fill" ? "cursor-cell" : "cursor-crosshair") : "cursor-default"}`}
       >
@@ -411,10 +443,10 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
       </div>
 
       {isDrawer && (
-        <div className="toolbar-area bg-[#e2e8f0] border-t-2 lg:border-t-4 border-[#94a3b8] p-2 flex flex-col sm:flex-row justify-between items-center px-2 sm:px-6 relative overflow-visible shrink-0 gap-2">
+        <div className="toolbar-area bg-[#e2e8f0] border-t-2 lg:border-t-4 border-[#94a3b8] p-2 flex flex-row flex-nowrap justify-between sm:justify-center items-center px-1 sm:px-6 relative overflow-visible shrink-0 gap-1 sm:gap-4 w-full">
           <div className="absolute top-0 left-0 right-0 h-4 bg-white/60 pointer-events-none" />
 
-          <div className="flex space-x-1 sm:space-x-3 relative z-10 overflow-visible w-full sm:w-auto scrollbar-hidden items-center justify-between sm:justify-start">
+          <div className="flex flex-row gap-1 sm:space-x-3 relative z-10 overflow-visible shrink-0 items-center justify-center">
             {/* Tools */}
             <div className="flex bg-white rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#94a3b8] shadow-[0_2px_0_#94a3b8] overflow-hidden shrink-0">
               <button
@@ -439,13 +471,13 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
               </button>
             </div>
 
-            {/* Divider */}
-            <div className="w-px h-8 sm:h-12 bg-gray-400 mx-1 sm:mx-2 hidden sm:block shrink-0" />
-
             {/* Dynamic Palette Popover */}
             <div className="relative shrink-0">
               <button
-                onClick={() => setShowPalette(!showPalette)}
+                onClick={() => {
+                  setShowPalette(!showPalette);
+                  setShowSlider(false);
+                }}
                 className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 sm:border-[3px] border-[#94a3b8] flex items-center justify-center bg-white shadow-[0_2px_0_#94a3b8] active:translate-y-0.5 active:shadow-none transition-all"
               >
                 <Palette
@@ -460,7 +492,7 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowPalette(false)}
                   />
-                  <div className="absolute bottom-full mb-3 lg:mb-4 -left-10 sm:left-0 bg-white border-[3px] border-[#94a3b8] rounded-2xl shadow-[0_6px_0_#94a3b8] p-3 w-65 sm:w-[320px] z-50 animate-in fade-in zoom-in duration-200 origin-bottom-left sm:origin-bottom">
+                  <div className="absolute bottom-full mb-3 lg:mb-4 left-1/2 -translate-x-1/2 bg-white border-[3px] border-[#94a3b8] rounded-2xl shadow-[0_6px_0_#94a3b8] p-3 w-[280px] sm:w-[320px] z-50 animate-in fade-in zoom-in duration-200 origin-bottom">
                     <div className="absolute top-0 inset-x-0 h-3 bg-slate-100/80 pointer-events-none rounded-t-xl" />
                     <div className="grid grid-cols-6 gap-2 relative z-10">
                       {PRESET_COLORS.map((c) => (
@@ -497,25 +529,48 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="w-px h-8 sm:h-12 bg-gray-400 mx-1 sm:mx-2 shrink-0" />
+            {/* Brush Size Popover */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => {
+                  setShowSlider(!showSlider);
+                  setShowPalette(false);
+                }}
+                className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 sm:border-[3px] border-[#94a3b8] flex items-center justify-center bg-white shadow-[0_2px_0_#94a3b8] active:translate-y-0.5 active:shadow-none transition-all"
+              >
+                <div 
+                  className="bg-[#1f2937] rounded-full" 
+                  style={{ width: Math.max(4, brushSize / 2.5), height: Math.max(4, brushSize / 2.5) }} 
+                />
+              </button>
 
-            {/* Brush Size Slider */}
-            <div className="flex items-center space-x-1 sm:space-x-2 bg-white px-2 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#94a3b8] shadow-[0_2px_0_#94a3b8] shrink-0">
-              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-black rounded-full" />
-              <input
-                type="range"
-                min="2"
-                max="40"
-                value={brushSize}
-                onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                className="w-16 sm:w-24 accent-[#64748b] h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-black rounded-full" />
+              {showSlider && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowSlider(false)}
+                  />
+                  <div className="absolute bottom-full mb-3 lg:mb-4 left-1/2 -translate-x-1/2 bg-white border-[3px] border-[#94a3b8] rounded-2xl shadow-[0_6px_0_#94a3b8] p-3 z-50 animate-in fade-in zoom-in duration-200 origin-bottom flex items-center space-x-2">
+                    <div className="absolute top-0 inset-x-0 h-3 bg-slate-100/80 pointer-events-none rounded-t-xl" />
+                    <div className="relative z-10 flex items-center gap-2 px-1">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-black rounded-full" />
+                      <input
+                        type="range"
+                        min="2"
+                        max="40"
+                        value={brushSize}
+                        onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                        className="w-32 accent-[#64748b] h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-black rounded-full" />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex space-x-2 sm:space-x-3 relative z-10 shrink-0 w-full sm:w-auto justify-end mt-2 sm:mt-0">
+          <div className="flex space-x-1 sm:space-x-3 relative z-10 shrink-0 mt-0">
             {/* Undo Button */}
             <button
               onClick={handleUndo}

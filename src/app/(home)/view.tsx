@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase/client";
 import SkyBackground from "@/components/SkyBackground";
 
@@ -9,13 +9,15 @@ import Header from "@/components/lobby/Header";
 import LogoBlock from "@/components/lobby/LogoBlock";
 import AuthBlock from "@/components/lobby/AuthBlock";
 import CreditBadge from "@/components/lobby/CreditBadge";
-import { createOAuth } from "@/lib/supabase/auth";
+import { useAppStore } from "@/store/app-store";
 
 export default function HomeView({ initialUser }: { initialUser: any }) {
   const [guestLoading, setGuestLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [user, setUser] = useState<any>(initialUser);
+  const { user, setUser } = useAppStore();
   const [isClient, setIsClient] = useState(false);
+
+  // We use activeUser to gracefully handle localStorage guest users after hydration
+  const activeUser = isClient ? user : initialUser;
 
   const [name, setName] = useState(initialUser?.user_metadata?.full_name || "");
   const [avatarSeed, setAvatarSeed] = useState("");
@@ -25,6 +27,7 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
 
   useEffect(() => {
     setIsClient(true);
+    setUser(initialUser);
 
     // Set seed logic
     let seedSet = false;
@@ -76,33 +79,13 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
         if (currentUser.user_metadata?.full_name) {
           setName(currentUser.user_metadata.full_name);
         }
-      } else {
-        // Only clear if we actually logged out from a real session
-        setUser((prev: any) => (prev?.is_anonymous ? prev : null));
+      } else if (_event === "SIGNED_OUT") {
+        const currentUserState = useAppStore.getState().user;
+        setUser(currentUserState?.is_anonymous ? currentUserState : null);
       }
     });
     return () => subscription.unsubscribe();
   }, [initialUser]);
-
-  const handleGoogleLogin = () =>
-    createOAuth("google", {
-      onStarting() {
-        setGoogleLoading(true);
-      },
-      onError(error) {
-        console.error("Error logging in:", error);
-        setGoogleLoading(false);
-      },
-      redirectTo: `${window.location.origin}/`,
-    });
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("draw_guest_user");
-    setUser(null);
-    setName("");
-    setAvatarSeed(Math.random().toString(36).substring(7));
-  };
 
   const handlePlay = async () => {
     if (!name.trim()) return;
@@ -148,41 +131,15 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
     }
   };
 
-  if (!isClient) {
-    // Return a server-rendered shell that matches the initial layout but without client state.
-    return (
-      <main className="min-h-screen lg:h-screen w-full overflow-x-hidden lg:overflow-hidden overflow-y-auto flex flex-col font-sans relative">
-        <SkyBackground />
-        <Header user={initialUser} />
-        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 sm:gap-12 lg:gap-24 p-4 sm:p-6 pb-12 sm:pb-16 lg:p-10 min-h-0 relative z-10 w-full max-w-350 mx-auto">
-          <LogoBlock user={initialUser} onPlayClick={() => {}} />
-          <AuthBlock
-            user={initialUser}
-            name={initialUser?.user_metadata?.full_name || ""}
-            setName={() => {}}
-            avatarSeed={""}
-            setAvatarSeed={() => {}}
-            handlePlay={() => {}}
-            handleGoogleLogin={() => {}}
-            handleLogout={() => {}}
-            guestLoading={false}
-            googleLoading={false}
-          />
-        </div>
-        <CreditBadge />
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-screen lg:h-screen w-full overflow-x-hidden lg:overflow-hidden overflow-y-auto flex flex-col font-sans relative">
       <SkyBackground />
 
-      <Header user={user} />
+      <Header user={activeUser} />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 sm:gap-12 lg:gap-24 p-4 sm:p-6 pb-12 sm:pb-16 lg:p-10 min-h-0 relative z-10 w-full max-w-350 mx-auto">
         <LogoBlock
-          user={user}
+          user={activeUser}
           onPlayClick={() => {
             setModalMode("menu");
             setShowRoomModal(true);
@@ -190,23 +147,20 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
         />
 
         <AuthBlock
-          user={user}
-          name={name}
+          name={isClient ? name : (initialUser?.user_metadata?.full_name || "")}
           setName={setName}
-          avatarSeed={avatarSeed}
+          avatarSeed={isClient ? avatarSeed : ""}
           setAvatarSeed={setAvatarSeed}
           handlePlay={handlePlay}
-          handleGoogleLogin={handleGoogleLogin}
-          handleLogout={handleLogout}
           guestLoading={guestLoading}
-          googleLoading={googleLoading}
+          user={activeUser}
         />
       </div>
 
       <RoomModal
         isOpen={showRoomModal}
         onClose={() => setShowRoomModal(false)}
-        user={user}
+        user={activeUser}
         initialMode={modalMode}
       />
 

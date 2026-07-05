@@ -31,6 +31,7 @@ export default function Header({ user }: { user: any }) {
             <div className="absolute top-0 inset-x-0 h-3 bg-white/40 pointer-events-none" />
             <img
               src={
+                user.avatar ||
                 user.user_metadata?.avatar_url ||
                 "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"
               }
