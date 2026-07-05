@@ -35,7 +35,7 @@ const SoftCloud = ({
 
 export default function SkyBackground() {
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden bg-linear-to-b from-[#0ea5e9] via-[#38bdf8] to-[#bae6fd] pointer-events-none">
+    <div className="fixed inset-0 z-0 overflow-hidden bg-linear-to-b from-[#0ea5e9] via-[#38bdf8] to-[#bae6fd] pointer-events-none">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes drift {
           0% { left: 100%; }

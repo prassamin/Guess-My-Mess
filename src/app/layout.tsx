@@ -10,11 +10,12 @@ const fredoka = Fredoka({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#87CEEB",
+  themeColor: "#0ea5e9",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  interactiveWidget: "resizes-content",
 };
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -91,7 +92,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${fredoka.className} bg-[#87CEEB] text-slate-800 min-h-screen`}
+        className={`${fredoka.className} bg-linear-to-b from-[#0ea5e9] via-[#38bdf8] to-[#bae6fd] text-slate-800 min-h-dvh`}
       >
         <Providers>{children}</Providers>
       </body>

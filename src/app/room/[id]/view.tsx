@@ -271,7 +271,7 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
   return (
     <div
-      className={`${gameStarted ? "h-dvh" : "min-h-dvh overflow-x-hidden overflow-y-auto"} flex flex-col p-0 lg:p-6 gap-0 lg:gap-6 font-sans relative`}
+      className={`${gameStarted ? "fixed inset-0" : "min-h-dvh overflow-x-hidden overflow-y-auto relative"} flex flex-col p-0 lg:p-6 gap-0 lg:gap-6 font-sans`}
     >
       <SkyBackground />
 
@@ -346,7 +346,7 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
         {/* Bottom: Players and Chat Side by Side */}
         <div
-          className={`flex flex-row w-full ${gameStarted ? "flex-2 min-h-0 shrink-0 gap-0" : "h-[50vh] min-h-100 gap-0"}`}
+          className={`flex flex-row w-full ${gameStarted ? "flex-2 min-h-0 shrink-0 gap-0" : "h-[50dvh] min-h-100 gap-0"}`}
         >
           <div className="flex-1 w-1/2 h-full min-h-0">
             <PlayersSidebar />
