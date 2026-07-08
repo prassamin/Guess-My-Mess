@@ -17,20 +17,20 @@ export default function PlayersSidebar() {
   const serverMutedUsers = roomState?.serverMutedUsers || [];
 
   const handleKick = (targetId: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "kick", targetId }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "kick", targetId });
     }
   };
 
   const handleVoteKick = (targetId: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "vote_kick", targetId }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "vote_kick", targetId });
     }
   };
 
   const handleServerToggleMute = (targetId: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "server_toggle_mute", targetId }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "server_toggle_mute", targetId });
     }
   };
 
@@ -38,7 +38,7 @@ export default function PlayersSidebar() {
     setMutedUserIds((prev: string[]) =>
       prev.includes(targetId)
         ? prev.filter((id: string) => id !== targetId)
-        : [...prev, targetId],
+        : [...prev, targetId]
     );
   };
 
@@ -136,7 +136,12 @@ export default function PlayersSidebar() {
 
               {serverMutedUsers.includes(player.id) && (
                 <div
-                  className={`ml-auto bg-[#ef4444] p-1 rounded-md border-2 border-[#991b1b] shadow-[0_2px_0_#991b1b] shrink-0 ${player.id !== currentUserId && mutedUserIds.includes(player.id) ? "ml-2" : ""}`}
+                  className={`ml-auto bg-[#ef4444] p-1 rounded-md border-2 border-[#991b1b] shadow-[0_2px_0_#991b1b] shrink-0 ${
+                    player.id !== currentUserId &&
+                    mutedUserIds.includes(player.id)
+                      ? "ml-2"
+                      : ""
+                  }`}
                 >
                   <MicOff className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>

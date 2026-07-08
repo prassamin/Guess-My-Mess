@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { io } from "socket.io-client";
 import { supabase } from "@/lib/supabase/client";
 import SkyBackground from "@/components/SkyBackground";
 
@@ -76,7 +77,12 @@ export default function RoomView({ roomId }: { roomId: string }) {
         }
         if (sessionStorage.getItem("previouslyConfirmed") !== "true") {
           setShowJoinModal(true);
-        } else if (!guestStr) {
+          // sessionStorage.removeItem("previouslyConfirmed");
+          return;
+        } else {
+          // sessionStorage.removeItem("previouslyConfirmed");
+        }
+        if (!guestStr) {
           setShowJoinModal(true); // Failsafe if they somehow have the flag but no guest data
         } else {
           setUser(JSON.parse(guestStr));
@@ -106,75 +112,95 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
   // WebSocket Connection
   const userId = user?.id;
-  const userName = user?.user_metadata?.full_name;
-  const userAvatar = user?.user_metadata?.avatar_url;
+  // Use refs so metadata changes don't recreate the socket — prevents double-join
+  const userNameRef = useRef(user?.user_metadata?.full_name);
+  const userAvatarRef = useRef(user?.user_metadata?.avatar_url);
+  userNameRef.current = user?.user_metadata?.full_name;
+  userAvatarRef.current = user?.user_metadata?.avatar_url;
 
   useEffect(() => {
     if (!userId || showJoinModal) return;
 
-    const url = new URL(`${NEXT_PUBLIC_SOCKET_URL}/ws`);
-    url.searchParams.append("roomId", roomId);
-    url.searchParams.append("userId", userId);
-    url.searchParams.append("name", userName || "");
-    url.searchParams.append("avatar", userAvatar || "");
+    const socket = io(NEXT_PUBLIC_SOCKET_URL.replace("ws://", "http://"), {
+      query: {
+        roomId,
+        userId,
+        name: userNameRef.current || "",
+        avatar: userAvatarRef.current || "",
+      },
+    });
 
-    const socket = new WebSocket(url.toString());
-
-    socket.onopen = () => {
+    socket.on("connect", () => {
       console.log("Connected to room server!");
-    };
+    });
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "room_state") {
-        setRoomState(data.room);
-        if (data.room.status === "playing") {
+    socket.on("room_state", (data) => {
+      const roomData = data.room || data;
+
+      if (roomData && roomData.players) {
+        setRoomState(roomData);
+        if (roomData.status === "playing") {
           setGameStarted(true);
-        } else if (data.room.status === "finished") {
-          setGameStarted(false); // Can show game over screen
-        } else if (data.room.status === "waiting") {
+        } else if (roomData.status === "finished") {
+          setGameStarted(false);
+        } else if (roomData.status === "waiting") {
           setGameStarted(false);
         }
 
-        // When a new round starts, reset local words for guessers
-        if (data.room.gameState?.phase === "choosing") {
+        if (roomData.gameState?.phase === "choosing") {
           setRevealedWord("");
           setCurrentWord("");
         }
-      } else if (data.type === "chat") {
-        setChatMessages((prev) => [...prev, data]);
-        if (data.userId === "system") {
-          if (data.text.includes("joined the room!")) playAudio("join");
-          else if (
-            data.text.includes("left the room") ||
-            data.text.includes("The drawer left!")
-          )
-            playAudio("leave");
-          else if (data.text.includes("guessed the word!"))
-            playAudio("correct_guess");
-        }
-      } else if (data.type === "choose_word") {
-        setWordChoices(data.choices);
-        setRevealedWord("");
-      } else if (data.type === "you_are_drawing") {
-        setCurrentWord(data.word);
-        setRevealedWord("");
-      } else if (data.type === "round_end") {
-        setRevealedWord(data.word);
-        playAudio("round_end");
-      } else if (data.type === "hint_update") {
-        setRevealedWord(data.hint);
-      } else if (data.type === "room_closed" || data.type === "kicked") {
-        router.push("/");
       }
-    };
+    });
+
+    socket.on("chat", (data) => {
+      setChatMessages((prev) => [...prev, data]);
+      if (data.userId === "system") {
+        if (data.text.includes("joined the room!")) playAudio("join");
+        else if (
+          data.text.includes("left the room") ||
+          data.text.includes("The drawer left!")
+        )
+          playAudio("leave");
+        else if (data.text.includes("guessed the word!"))
+          playAudio("correct_guess");
+      }
+    });
+
+    socket.on("choose_word", (data) => {
+      setWordChoices(data.choices);
+      setRevealedWord("");
+    });
+
+    socket.on("you_are_drawing", (data) => {
+      setCurrentWord(data.word);
+      setRevealedWord("");
+    });
+
+    socket.on("round_end", (data) => {
+      setRevealedWord(data.word);
+      playAudio("round_end");
+    });
+
+    socket.on("hint_update", (data) => {
+      setRevealedWord(data.hint);
+    });
+
+    socket.on("room_closed", () => {
+      router.push("/");
+    });
+
+    socket.on("kicked", () => {
+      router.push("/");
+    });
 
     setWs(socket);
 
     return () => {
-      socket.close();
+      socket.disconnect();
     };
-  }, [userId, userName, userAvatar, showJoinModal, roomId]);
+  }, [userId, showJoinModal, roomId]); // userName/userAvatar use refs — excluded intentionally
 
   const handlePlay = async () => {
     if (!name.trim()) return;
@@ -251,7 +277,11 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
   return (
     <div
-      className={`${gameStarted ? "fixed inset-0" : "min-h-dvh overflow-x-hidden overflow-y-auto relative"} flex flex-col p-0 lg:p-6 gap-0 lg:gap-6 font-sans`}
+      className={`${
+        gameStarted
+          ? "fixed inset-0"
+          : "min-h-dvh overflow-x-hidden overflow-y-auto relative"
+      } flex flex-col p-0 lg:p-6 gap-0 lg:gap-6 font-sans`}
     >
       <SkyBackground />
 
@@ -275,14 +305,18 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
       {/* Desktop Layout (hidden on mobile, visible on lg screens) */}
       <main
-        className={`hidden lg:grid flex-1 grid-cols-4 grid-rows-1 gap-6 max-w-[1600px] w-full mx-auto ${gameStarted ? "min-h-0" : "min-h-[80vh] max-h-[80vh]"}`}
+        className={`hidden lg:grid flex-1 grid-cols-4 grid-rows-1 gap-6 max-w-[1600px] w-full mx-auto ${
+          gameStarted ? "min-h-0" : "min-h-[80vh] max-h-[80vh]"
+        }`}
       >
         <div className={`col-span-1 ${gameStarted ? "h-full min-h-0" : ""}`}>
           <PlayersSidebar />
         </div>
 
         <div
-          className={`col-span-2 flex flex-col ${gameStarted ? "h-full min-h-0" : ""}`}
+          className={`col-span-2 flex flex-col ${
+            gameStarted ? "h-full min-h-0" : ""
+          }`}
         >
           {gameStarted ? (
             <GameArea />
@@ -303,11 +337,15 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
       {/* Mobile Layout (visible on small/medium screens, hidden on lg screens) */}
       <main
-        className={`flex lg:hidden flex-col flex-1 w-full mx-auto ${gameStarted ? "min-h-0 overflow-hidden gap-0" : "gap-0"}`}
+        className={`flex lg:hidden flex-col flex-1 w-full mx-auto ${
+          gameStarted ? "min-h-0 overflow-hidden gap-0" : "gap-0"
+        }`}
       >
         {/* Top: Canvas/Waiting Lobby */}
         <div
-          className={`w-full flex flex-col ${gameStarted ? "flex-3 min-h-0" : "min-h-[40vh]"}`}
+          className={`w-full flex flex-col ${
+            gameStarted ? "flex-3 min-h-0" : "min-h-[40vh]"
+          }`}
         >
           {gameStarted ? (
             <GameArea />
@@ -323,7 +361,11 @@ export default function RoomView({ roomId }: { roomId: string }) {
 
         {/* Bottom: Players and Chat Side by Side */}
         <div
-          className={`flex flex-row w-full ${gameStarted ? "flex-2 min-h-0 shrink-0 gap-0" : "h-[50dvh] min-h-100 gap-0"}`}
+          className={`flex flex-row w-full ${
+            gameStarted
+              ? "flex-2 min-h-0 shrink-0 gap-0"
+              : "h-[50dvh] min-h-100 gap-0"
+          }`}
         >
           <div className="flex-1 w-1/2 h-full min-h-0">
             <PlayersSidebar />

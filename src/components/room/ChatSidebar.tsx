@@ -16,20 +16,20 @@ export default function ChatSidebar() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = (text: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "chat", text }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "chat", text });
     }
   };
 
   const handleVoteKick = (targetId: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "vote_kick", targetId }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "vote_kick", targetId });
     }
   };
 
   const handleVoteKickNo = (targetId: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "vote_kick_no", targetId }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "vote_kick_no", targetId });
     }
   };
 
@@ -127,13 +127,23 @@ export default function ChatSidebar() {
           return (
             <div
               key={i}
-              className={`flex flex-col ${isMe ? "items-end" : "items-start"} animate-in fade-in slide-in-from-bottom-2 duration-200`}
+              className={`flex flex-col ${
+                isMe ? "items-end" : "items-start"
+              } animate-in fade-in slide-in-from-bottom-2 duration-200`}
             >
               <span className="text-[10px] sm:text-xs font-black text-gray-500 mb-0.5 mx-1 uppercase tracking-wider">
                 {isMe ? "You" : msg.name}
               </span>
               <div
-                className={`${isMe ? "bg-[#60a5fa] rounded-tr-none shadow-[0_3px_0_#1d4ed8]" : "bg-white rounded-tl-none shadow-[0_3px_0_#94a3b8]"} ${isMe ? "text-white" : "text-[#1f2937]"} font-black p-2 sm:p-3 text-xs sm:text-sm rounded-xl sm:rounded-2xl border-2 sm:border-[3px] ${isMe ? "border-[#1d4ed8]" : "border-[#94a3b8]"} inline-block max-w-[85%] relative overflow-hidden wrap-break-word`}
+                className={`${
+                  isMe
+                    ? "bg-[#60a5fa] rounded-tr-none shadow-[0_3px_0_#1d4ed8]"
+                    : "bg-white rounded-tl-none shadow-[0_3px_0_#94a3b8]"
+                } ${
+                  isMe ? "text-white" : "text-[#1f2937]"
+                } font-black p-2 sm:p-3 text-xs sm:text-sm rounded-xl sm:rounded-2xl border-2 sm:border-[3px] ${
+                  isMe ? "border-[#1d4ed8]" : "border-[#94a3b8]"
+                } inline-block max-w-[85%] relative overflow-hidden wrap-break-word`}
               >
                 <div className="absolute top-0 left-0 right-0 h-2 bg-white/40 pointer-events-none" />
                 {msg.text}
@@ -178,7 +188,10 @@ export default function ChatSidebar() {
                   <div
                     className="bg-[#4ade80] h-full transition-all duration-500 ease-out"
                     style={{
-                      width: `${Math.min(100, ((voters as string[])?.length / votesNeeded) * 100)}%`,
+                      width: `${Math.min(
+                        100,
+                        ((voters as string[])?.length / votesNeeded) * 100
+                      )}%`,
                     }}
                   />
                 </div>
@@ -187,7 +200,10 @@ export default function ChatSidebar() {
                   <div
                     className="bg-[#f87171] h-full transition-all duration-500 ease-out"
                     style={{
-                      width: `${Math.min(100, (noVoters.length / votesNeeded) * 100)}%`,
+                      width: `${Math.min(
+                        100,
+                        (noVoters.length / votesNeeded) * 100
+                      )}%`,
                     }}
                   />
                 </div>

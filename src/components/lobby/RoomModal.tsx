@@ -28,7 +28,7 @@ export default function RoomModal({
   const [modalMode, setModalMode] = useState<"menu" | "create">(initialMode);
   const [roomCode, setRoomCode] = useState("");
   const [rounds, setRounds] = useState(3);
-  const [drawTime, setDrawTime] = useState(80);
+  const [drawTime, setDrawTime] = useState(60);
   const [maxPlayers, setMaxPlayers] = useState(8);
   const [wordCount, setWordCount] = useState(3);
   const [hints, setHints] = useState(2);
@@ -50,6 +50,7 @@ export default function RoomModal({
     try {
       const exists = await checkRoomExists(code);
       if (exists) {
+        sessionStorage.setItem("previouslyConfirmed", "true");
         router.push(`/room/${code}`);
       } else {
         setJoinError("Room not found!");
@@ -70,13 +71,14 @@ export default function RoomModal({
       const { rooms } = await getPublicRooms();
       // Filter for rooms that have space (getPublicRooms already filters for valid status)
       const availableRooms = rooms.filter(
-        (r: any) => r.playersCount < r.maxPlayers,
+        (r: any) => r.playersCount < r.maxPlayers
       );
 
       if (availableRooms.length > 0) {
         // Pick a random available room
         const randomRoom =
           availableRooms[Math.floor(Math.random() * availableRooms.length)];
+        sessionStorage.setItem("previouslyConfirmed", "true");
         router.push(`/room/${randomRoom.id}`);
       } else {
         setJoinError("No public rooms available!");
@@ -123,17 +125,18 @@ export default function RoomModal({
 
       if (!res || !res.success) {
         throw new Error(
-          res?.error || "Failed to create a unique room. Please try again.",
+          res?.error || "Failed to create a unique room. Please try again."
         );
       }
 
+      sessionStorage.setItem("previouslyConfirmed", "true");
       router.push(`/room/${roomCode}`);
     } catch (err: any) {
       console.error(err);
       setCreateError(
         (err.message === "An unexpected response was received from the server."
           ? "Internal Server Error"
-          : err.message) || "Failed to create room",
+          : err.message) || "Failed to create room"
       );
       setIsCreating(false);
     }
@@ -144,7 +147,11 @@ export default function RoomModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1f2937]/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className={`bg-white border-2 sm:border-[6px] border-[#0f172a] rounded-3xl sm:rounded-[3rem] p-4 sm:p-6 md:p-8 w-[92vw] sm:w-full shadow-[0_8px_0_#0f172a] sm:shadow-[0_16px_0_#0f172a] relative animate-in zoom-in-95 duration-300 mx-auto ${modalMode === "menu" ? "max-w-[92vw] sm:max-w-md md:max-w-lg" : "max-w-[95vw] sm:max-w-2xl"}`}
+        className={`bg-white border-2 sm:border-[6px] border-[#0f172a] rounded-3xl sm:rounded-[3rem] p-4 sm:p-6 md:p-8 w-[92vw] sm:w-full shadow-[0_8px_0_#0f172a] sm:shadow-[0_16px_0_#0f172a] relative animate-in zoom-in-95 duration-300 mx-auto ${
+          modalMode === "menu"
+            ? "max-w-[92vw] sm:max-w-md md:max-w-lg"
+            : "max-w-[95vw] sm:max-w-2xl"
+        }`}
       >
         <button
           onClick={onClose}
@@ -255,13 +262,21 @@ export default function RoomModal({
                   <div className="flex bg-white rounded-xl border-[3px] border-[#94a3b8] overflow-hidden w-full sm:w-64 shrink-0">
                     <button
                       onClick={() => setIsPublic(true)}
-                      className={`flex-1 py-3 font-black text-lg transition-colors border-r-[3px] border-[#94a3b8] ${isPublic ? "bg-[#4ade80] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"}`}
+                      className={`flex-1 py-3 font-black text-lg transition-colors border-r-[3px] border-[#94a3b8] ${
+                        isPublic
+                          ? "bg-[#4ade80] text-white shadow-inner"
+                          : "text-[#1f2937] hover:bg-gray-100"
+                      }`}
                     >
                       PUBLIC
                     </button>
                     <button
                       onClick={() => setIsPublic(false)}
-                      className={`flex-1 py-3 font-black text-lg transition-colors ${!isPublic ? "bg-[#f87171] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"}`}
+                      className={`flex-1 py-3 font-black text-lg transition-colors ${
+                        !isPublic
+                          ? "bg-[#f87171] text-white shadow-inner"
+                          : "text-[#1f2937] hover:bg-gray-100"
+                      }`}
                     >
                       PRIVATE
                     </button>
@@ -277,7 +292,13 @@ export default function RoomModal({
                       <button
                         key={num}
                         onClick={() => setMaxPlayers(num)}
-                        className={`flex-1 py-2 font-black transition-colors ${maxPlayers === num ? "bg-[#4ade80] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"} ${num !== 16 ? "border-r-[3px] border-[#94a3b8]" : ""}`}
+                        className={`flex-1 py-2 font-black transition-colors ${
+                          maxPlayers === num
+                            ? "bg-[#4ade80] text-white shadow-inner"
+                            : "text-[#1f2937] hover:bg-gray-100"
+                        } ${
+                          num !== 16 ? "border-r-[3px] border-[#94a3b8]" : ""
+                        }`}
                       >
                         {num}
                       </button>
@@ -294,7 +315,13 @@ export default function RoomModal({
                       <button
                         key={num}
                         onClick={() => setRounds(num)}
-                        className={`flex-1 py-2 font-black transition-colors ${rounds === num ? "bg-[#ffb74d] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"} ${num !== 10 ? "border-r-[3px] border-[#94a3b8]" : ""}`}
+                        className={`flex-1 py-2 font-black transition-colors ${
+                          rounds === num
+                            ? "bg-[#ffb74d] text-white shadow-inner"
+                            : "text-[#1f2937] hover:bg-gray-100"
+                        } ${
+                          num !== 10 ? "border-r-[3px] border-[#94a3b8]" : ""
+                        }`}
                       >
                         {num}
                       </button>
@@ -311,7 +338,13 @@ export default function RoomModal({
                       <button
                         key={num}
                         onClick={() => setDrawTime(num)}
-                        className={`flex-1 py-2 font-black transition-colors ${drawTime === num ? "bg-[#60a5fa] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"} ${num !== 150 ? "border-r-[3px] border-[#94a3b8]" : ""}`}
+                        className={`flex-1 py-2 font-black transition-colors ${
+                          drawTime === num
+                            ? "bg-[#60a5fa] text-white shadow-inner"
+                            : "text-[#1f2937] hover:bg-gray-100"
+                        } ${
+                          num !== 150 ? "border-r-[3px] border-[#94a3b8]" : ""
+                        }`}
                       >
                         {num}
                       </button>
@@ -328,7 +361,13 @@ export default function RoomModal({
                       <button
                         key={num}
                         onClick={() => setWordCount(num)}
-                        className={`flex-1 py-2 font-black transition-colors ${wordCount === num ? "bg-[#a855f7] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"} ${num !== 5 ? "border-r-[3px] border-[#94a3b8]" : ""}`}
+                        className={`flex-1 py-2 font-black transition-colors ${
+                          wordCount === num
+                            ? "bg-[#a855f7] text-white shadow-inner"
+                            : "text-[#1f2937] hover:bg-gray-100"
+                        } ${
+                          num !== 5 ? "border-r-[3px] border-[#94a3b8]" : ""
+                        }`}
                       >
                         {num}
                       </button>
@@ -345,7 +384,13 @@ export default function RoomModal({
                       <button
                         key={num}
                         onClick={() => setHints(num)}
-                        className={`flex-1 py-2 font-black transition-colors ${hints === num ? "bg-[#f43f5e] text-white shadow-inner" : "text-[#1f2937] hover:bg-gray-100"} ${num !== 3 ? "border-r-[3px] border-[#94a3b8]" : ""}`}
+                        className={`flex-1 py-2 font-black transition-colors ${
+                          hints === num
+                            ? "bg-[#f43f5e] text-white shadow-inner"
+                            : "text-[#1f2937] hover:bg-gray-100"
+                        } ${
+                          num !== 3 ? "border-r-[3px] border-[#94a3b8]" : ""
+                        }`}
                       >
                         {num === 0 ? "0" : num}
                       </button>
@@ -375,10 +420,16 @@ export default function RoomModal({
                       onChange={(e) => setCustomWordsOnly(e.target.checked)}
                     />
                     <div
-                      className={`w-12 h-7 sm:w-14 sm:h-8 rounded-full border-2 sm:border-4 border-[#94a3b8] transition-colors ${customWordsOnly ? "bg-[#4ade80]" : "bg-white"}`}
+                      className={`w-12 h-7 sm:w-14 sm:h-8 rounded-full border-2 sm:border-4 border-[#94a3b8] transition-colors ${
+                        customWordsOnly ? "bg-[#4ade80]" : "bg-white"
+                      }`}
                     ></div>
                     <div
-                      className={`absolute top-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-[3px] border-[#94a3b8] transition-transform duration-200 ${customWordsOnly ? "translate-x-6 bg-white" : "translate-x-1 bg-gray-300"}`}
+                      className={`absolute top-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-[3px] border-[#94a3b8] transition-transform duration-200 ${
+                        customWordsOnly
+                          ? "translate-x-6 bg-white"
+                          : "translate-x-1 bg-gray-300"
+                      }`}
                     ></div>
                   </div>
                   <span className="font-black text-[#1f2937] text-sm uppercase tracking-wide transition-colors">

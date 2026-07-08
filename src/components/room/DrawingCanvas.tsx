@@ -14,10 +14,11 @@ interface DrawingCanvasProps {
 }
 
 const hexToRgba = (hex: string) => {
+  if (!hex || typeof hex !== "string") return [0, 0, 0, 255];
   const c = hex.replace("#", "");
-  const r = parseInt(c.length === 3 ? c[0] + c[0] : c.slice(0, 2), 16);
-  const g = parseInt(c.length === 3 ? c[1] + c[1] : c.slice(2, 4), 16);
-  const b = parseInt(c.length === 3 ? c[2] + c[2] : c.slice(4, 6), 16);
+  const r = parseInt(c.length === 3 ? c[0] + c[0] : c.slice(0, 2), 16) || 0;
+  const g = parseInt(c.length === 3 ? c[1] + c[1] : c.slice(2, 4), 16) || 0;
+  const b = parseInt(c.length === 3 ? c[2] + c[2] : c.slice(4, 6), 16) || 0;
   return [r, g, b, 255];
 };
 
@@ -52,14 +53,16 @@ const floodFill = (
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  fillColorStr: string,
+  fillColorStr: string
 ) => {
   const canvas = ctx.canvas;
   const w = canvas.width;
   const h = canvas.height;
+  if (!w || !h) return;
   const imageData = ctx.getImageData(0, 0, w, h);
   const data = imageData.data;
 
+  if (!isFinite(x) || !isFinite(y)) return;
   const cx = Math.floor(x);
   const cy = Math.floor(y);
   if (cx < 0 || cy < 0 || cx >= w || cy >= h) return;
@@ -71,9 +74,14 @@ const floodFill = (
   const startA = data[startIdx + 3];
 
   const fc = hexToRgba(fillColorStr);
-  
+
   // If the target pixel is already the fill color exactly, no need to fill
-  if (fc[0] === startR && fc[1] === startG && fc[2] === startB && startA === 255) {
+  if (
+    fc[0] === startR &&
+    fc[1] === startG &&
+    fc[2] === startB &&
+    startA === 255
+  ) {
     return;
   }
 
@@ -81,7 +89,12 @@ const floodFill = (
   const colorMatch = (i: number) => {
     // If the pixel is already strictly our fill color, it's been visited and changed.
     // This absolutely prevents infinite loops.
-    if (data[i] === fc[0] && data[i+1] === fc[1] && data[i+2] === fc[2] && data[i+3] === 255) {
+    if (
+      data[i] === fc[0] &&
+      data[i + 1] === fc[1] &&
+      data[i + 2] === fc[2] &&
+      data[i + 3] === 255
+    ) {
       return false;
     }
     return (
@@ -159,43 +172,51 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (drawQueue.current.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "draw_batch", lines: drawQueue.current }));
+      if (drawQueue.current.length > 0 && ws && ws.connected) {
+        ws.emit("message", { type: "draw_batch", lines: drawQueue.current });
         drawQueue.current = [];
       }
-    }, 30); // ~33fps batching for smooth network performance
+    }, 30);
     return () => clearInterval(interval);
   }, [ws]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    let cancelled = false;
 
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    const initCanvas = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-    }
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        if (!cancelled) requestAnimationFrame(initCanvas);
+        return;
+      }
 
-    const handleResize = () => {
-      if (!canvas || !ctx) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    initCanvas();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!ws) return;
 
-    const handleMessage = (event: MessageEvent) => {
-      const data = JSON.parse(event.data);
+    const handleMessage = (data: any) => {
       if (data.type === "draw") {
         if (isDrawer) return;
 
@@ -217,7 +238,7 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
         if (!canvas || !ctx) return;
-        
+
         const dpr = window.devicePixelRatio || 1;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
@@ -242,12 +263,16 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
         if (canvas && ctx) {
-          floodFill(
-            ctx,
-            data.x * canvas.width,
-            data.y * canvas.height,
-            data.color,
-          );
+          try {
+            floodFill(
+              ctx,
+              data.x * canvas.width,
+              data.y * canvas.height,
+              data.color
+            );
+          } catch (e) {
+            console.error("floodFill error:", e);
+          }
         }
       } else if (data.type === "sync_canvas") {
         if (isDrawer) return;
@@ -261,23 +286,28 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
           };
           img.src = data.dataURL;
         }
-      } else if (data.type === "request_canvas_sync") {
-        if (!isDrawer) return;
-        const canvas = canvasRef.current;
-        if (canvas && ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(
-            JSON.stringify({
-              type: "sync_canvas",
-              dataURL: canvas.toDataURL(),
-              targetId: data.requesterId,
-            }),
-          );
-        }
       }
     };
 
-    ws.addEventListener("message", handleMessage);
-    return () => ws.removeEventListener("message", handleMessage);
+    ws.on("message", handleMessage);
+
+    const handleRequestSync = (data: any) => {
+      if (!isDrawer) return;
+      const canvas = canvasRef.current;
+      if (canvas && ws && ws.connected) {
+        ws.emit("message", {
+          type: "sync_canvas",
+          dataURL: canvas.toDataURL(),
+          targetId: data.requesterId,
+        });
+      }
+    };
+    ws.on("request_canvas_sync", handleRequestSync);
+
+    return () => {
+      ws.off("message", handleMessage);
+      ws.off("request_canvas_sync", handleRequestSync);
+    };
   }, [ws, isDrawer]);
 
   const saveState = () => {
@@ -289,7 +319,7 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
 
   const getCoordinates = (
     e: React.MouseEvent | React.TouchEvent,
-    canvas: HTMLCanvasElement,
+    canvas: HTMLCanvasElement
   ) => {
     const rect = canvas.getBoundingClientRect();
     let clientX, clientY;
@@ -325,17 +355,19 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
           ctx,
           coords.x * canvas.width,
           coords.y * canvas.height,
-          color,
+          color
         );
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(
-            JSON.stringify({
-              type: "fill",
-              x: coords.x,
-              y: coords.y,
-              color,
-            }),
-          );
+        if (ws && ws.connected) {
+          ws.emit("message", {
+            type: "fill",
+            x: coords.x,
+            y: coords.y,
+            color,
+          });
+          ws.emit("message", {
+            type: "sync_canvas",
+            dataURL: canvas.toDataURL(),
+          });
         }
       }
       return;
@@ -363,7 +395,10 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.moveTo(lastPos.current.x * canvas.width, lastPos.current.y * canvas.height);
+    ctx.moveTo(
+      lastPos.current.x * canvas.width,
+      lastPos.current.y * canvas.height
+    );
     ctx.lineTo(currentPos.x * canvas.width, currentPos.y * canvas.height);
     ctx.stroke();
 
@@ -393,8 +428,8 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "clear_canvas" }));
+      if (ws && ws.connected) {
+        ws.emit("message", { type: "clear_canvas" });
       }
     }
   };
@@ -414,10 +449,8 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({ type: "sync_canvas", dataURL: previousState }),
-        );
+      if (ws && ws.connected) {
+        ws.emit("message", { type: "sync_canvas", dataURL: previousState });
       }
     };
     img.src = previousState;
@@ -426,7 +459,13 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
   return (
     <div className="flex-1 bg-white rounded-none lg:rounded-b-4xl shadow-none lg:shadow-[0_12px_0_#94a3b8] flex flex-col min-h-0 border-b-2 lg:border-[6px] border-[#94a3b8] border-x-0 lg:border-x-[6px] lg:border-t-0 relative w-full h-full">
       <div
-        className={`flex-1 min-h-0 bg-white flex relative ${isDrawer ? (tool === "fill" ? "cursor-cell" : "cursor-crosshair") : "cursor-default"}`}
+        className={`flex-1 min-h-0 bg-white flex relative ${
+          isDrawer
+            ? tool === "fill"
+              ? "cursor-cell"
+              : "cursor-crosshair"
+            : "cursor-default"
+        }`}
       >
         <canvas
           ref={canvasRef}
@@ -451,21 +490,33 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
             <div className="flex bg-white rounded-xl sm:rounded-2xl border-2 sm:border-[3px] border-[#94a3b8] shadow-[0_2px_0_#94a3b8] overflow-hidden shrink-0">
               <button
                 onClick={() => setTool("brush")}
-                className={`p-1.5 sm:p-3 ${tool === "brush" ? "bg-[#60a5fa] text-white" : "hover:bg-gray-100 text-[#1f2937]"} transition-colors`}
+                className={`p-1.5 sm:p-3 ${
+                  tool === "brush"
+                    ? "bg-[#60a5fa] text-white"
+                    : "hover:bg-gray-100 text-[#1f2937]"
+                } transition-colors`}
               >
                 <Pencil className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
               <div className="w-px bg-[#94a3b8]" />
               <button
                 onClick={() => setTool("fill")}
-                className={`p-1.5 sm:p-3 ${tool === "fill" ? "bg-[#4ade80] text-white" : "hover:bg-gray-100 text-[#1f2937]"} transition-colors`}
+                className={`p-1.5 sm:p-3 ${
+                  tool === "fill"
+                    ? "bg-[#4ade80] text-white"
+                    : "hover:bg-gray-100 text-[#1f2937]"
+                } transition-colors`}
               >
                 <PaintBucket className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
               <div className="w-px bg-[#94a3b8]" />
               <button
                 onClick={() => setTool("eraser")}
-                className={`p-1.5 sm:p-3 ${tool === "eraser" ? "bg-[#f87171] text-white" : "hover:bg-gray-100 text-[#1f2937]"} transition-colors`}
+                className={`p-1.5 sm:p-3 ${
+                  tool === "eraser"
+                    ? "bg-[#f87171] text-white"
+                    : "hover:bg-gray-100 text-[#1f2937]"
+                } transition-colors`}
               >
                 <Eraser className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
@@ -503,7 +554,11 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
                             setTool(tool === "eraser" ? "brush" : tool);
                             setShowPalette(false);
                           }}
-                          className={`w-8 h-8 rounded-full border-2 ${color === c && tool !== "eraser" ? "border-[#3b82f6] shadow-[0_0_0_2px_#3b82f6] scale-110" : "border-[#94a3b8] shadow-[0_2px_0_#94a3b8] hover:translate-y-0.5 hover:shadow-none"} transition-all`}
+                          className={`w-8 h-8 rounded-full border-2 ${
+                            color === c && tool !== "eraser"
+                              ? "border-[#3b82f6] shadow-[0_0_0_2px_#3b82f6] scale-110"
+                              : "border-[#94a3b8] shadow-[0_2px_0_#94a3b8] hover:translate-y-0.5 hover:shadow-none"
+                          } transition-all`}
                           style={{ backgroundColor: c }}
                         />
                       ))}
@@ -538,9 +593,12 @@ export default function DrawingCanvas({ isDrawer }: DrawingCanvasProps) {
                 }}
                 className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 sm:border-[3px] border-[#94a3b8] flex items-center justify-center bg-white shadow-[0_2px_0_#94a3b8] active:translate-y-0.5 active:shadow-none transition-all"
               >
-                <div 
-                  className="bg-[#1f2937] rounded-full" 
-                  style={{ width: Math.max(4, brushSize / 2.5), height: Math.max(4, brushSize / 2.5) }} 
+                <div
+                  className="bg-[#1f2937] rounded-full"
+                  style={{
+                    width: Math.max(4, brushSize / 2.5),
+                    height: Math.max(4, brushSize / 2.5),
+                  }}
                 />
               </button>
 

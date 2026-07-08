@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import SkyBackground from "@/components/SkyBackground";
 
@@ -108,7 +108,6 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
           avatar_url: finalAvatarUrl,
         },
       });
-      sessionStorage.setItem("previouslyConfirmed", "true");
       setGuestLoading(false);
       setModalMode("menu");
       setShowRoomModal(true);
@@ -123,7 +122,6 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
       };
 
       localStorage.setItem("draw_guest_user", JSON.stringify(fakeUser));
-      sessionStorage.setItem("previouslyConfirmed", "true");
       setUser(fakeUser);
       setGuestLoading(false);
       setModalMode("menu");

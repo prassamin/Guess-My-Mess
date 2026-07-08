@@ -54,9 +54,9 @@ EXPOSE 3001
 
 # Create a startup script to run both processes
 RUN echo '#!/bin/sh' > /start.sh && \
-    echo 'echo "Starting Elysia Backend..."' >> /start.sh && \
+    echo 'echo "Starting Backend..."' >> /start.sh && \
     echo 'cd /app/server && bun run src/index.ts & BACKEND_PID=$!' >> /start.sh && \
-    echo 'echo "Starting Next.js Frontend..."' >> /start.sh && \
+    echo 'echo "Starting Frontend..."' >> /start.sh && \
     echo 'cd /app && HOSTNAME="0.0.0.0" node server.js & FRONTEND_PID=$!' >> /start.sh && \
     echo 'wait -n $BACKEND_PID $FRONTEND_PID' >> /start.sh && \
     chmod +x /start.sh

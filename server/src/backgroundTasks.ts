@@ -37,7 +37,7 @@ export function startBackgroundTasks() {
         const uniquePlayers = Array.from(uniquePlayersMap.values());
 
         const sortedPlayers = [...uniquePlayers].sort(
-          (a, b) => (b.score || 0) - (a.score || 0),
+          (a, b) => (b.score || 0) - (a.score || 0)
         );
         sortedPlayers.forEach((p, index) => {
           if (!p.db_player_id) return;
@@ -58,7 +58,8 @@ export function startBackgroundTasks() {
         const { error: gamesError } = await supabase
           .from("games")
           .upsert(gamesToUpsert);
-        if (gamesError) console.error("Error batch upserting games:", gamesError);
+        if (gamesError)
+          console.error("Error batch upserting games:", gamesError);
       }
       if (playersToUpsert.length > 0) {
         const { error: playersError } = await supabase
@@ -70,7 +71,7 @@ export function startBackgroundTasks() {
 
       if (gamesToUpsert.length > 0) {
         console.log(
-          `Successfully synced ${gamesToUpsert.length} games to database in background.`,
+          `Successfully synced ${gamesToUpsert.length} games to database in background.`
         );
       }
     } catch (err) {
@@ -120,10 +121,9 @@ export function startBackgroundTasks() {
               await redis.set(`room:${roomId}`, room, { ex: 7200 });
 
               if (appServer) {
-                appServer.publish(
-                  roomId,
-                  JSON.stringify({ type: "hint_update", hint: newHint }),
-                );
+                appServer
+                  .to(roomId)
+                  .emit("hint_update", { type: "hint_update", hint: newHint });
               }
             }
           }
@@ -152,16 +152,22 @@ export function startBackgroundTasks() {
         const hasActiveSockets = currentSockets && currentSockets.size > 0;
 
         // If room claims to be playing but has ZERO active connections to this server
-        if (!hasActiveSockets && room.status === "playing") {
+        // AND it hasn't had any activity in the last 60 seconds (prevents cross-server conflicts)
+        const isZombie = !hasActiveSockets && room.status === "playing" && (!room.lastActivity || Date.now() - room.lastActivity > 60000);
+
+        if (isZombie) {
           console.log(
-            `[REAPER] Found zombie room ${roomId}, resetting to waiting...`,
+            `[REAPER] Found zombie room ${roomId}, resetting to waiting...`
           );
           room.status = "waiting";
           room.gameState = undefined;
           room.players = [];
           clearGameTimer(roomId);
           await redis.set(`room:${roomId}`, room, { ex: 15 });
-        } else if (!hasActiveSockets && room.players.length === 0) {
+        } else if (
+          !hasActiveSockets &&
+          (!room.players || room.players.length === 0)
+        ) {
           // Completely empty, delete it
           await redis.del(`room:${roomId}`);
           await redis.del(`room:${roomId}:canvas`);
@@ -172,27 +178,4 @@ export function startBackgroundTasks() {
     }
   }, 60000);
 
-  // 2. Graceful Shutdown Hook: Prevent rooms from being stuck on restart
-  const handleGracefulShutdown = async () => {
-    console.log("\n[SERVER] Shutting down... cleaning up all active rooms...");
-    try {
-      for (const roomId of activeSockets.keys()) {
-        const room: RoomState | null = await redis.get(`room:${roomId}`);
-        if (room) {
-          room.status = "waiting";
-          room.gameState = undefined;
-          room.players = []; // Wipe players since server died
-          clearGameTimer(roomId);
-          await redis.set(`room:${roomId}`, room, { ex: 15 });
-        }
-      }
-      console.log("[SERVER] Cleanup complete. Goodbye!");
-    } catch (e) {
-      console.error("Error during graceful shutdown:", e);
-    }
-    process.exit(0);
-  };
-
-  process.on("SIGINT", handleGracefulShutdown);
-  process.on("SIGTERM", handleGracefulShutdown);
 }

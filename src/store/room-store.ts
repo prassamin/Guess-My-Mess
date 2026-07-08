@@ -1,32 +1,33 @@
-import { create } from 'zustand';
+import { create } from "zustand";
+import { Socket } from "socket.io-client";
 
 interface RoomStore {
   // App state
   gameStarted: boolean;
   setGameStarted: (started: boolean) => void;
-  
+
   roomNotFound: boolean;
   setRoomNotFound: (notFound: boolean) => void;
-  
-  ws: WebSocket | null;
-  setWs: (ws: WebSocket | null) => void;
-  
+
+  ws: Socket | null;
+  setWs: (ws: Socket | null) => void;
+
   roomState: any | null;
   setRoomState: (state: any) => void;
-  
+
   chatMessages: any[];
   setChatMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
-  
+
   mutedUserIds: string[];
   setMutedUserIds: (ids: string[] | ((prev: string[]) => string[])) => void;
-  
+
   // Game variables
   wordChoices: string[];
   setWordChoices: (choices: string[]) => void;
-  
+
   currentWord: string;
   setCurrentWord: (word: string) => void;
-  
+
   revealedWord: string;
   setRevealedWord: (word: string) => void;
 
@@ -47,14 +48,18 @@ export const useRoomStore = create<RoomStore>((set) => ({
   setRoomState: (state) => set({ roomState: state }),
 
   chatMessages: [],
-  setChatMessages: (updater) => set((state) => ({ 
-    chatMessages: typeof updater === 'function' ? updater(state.chatMessages) : updater 
-  })),
+  setChatMessages: (updater) =>
+    set((state) => ({
+      chatMessages:
+        typeof updater === "function" ? updater(state.chatMessages) : updater,
+    })),
 
   mutedUserIds: [],
-  setMutedUserIds: (updater) => set((state) => ({ 
-    mutedUserIds: typeof updater === 'function' ? updater(state.mutedUserIds) : updater 
-  })),
+  setMutedUserIds: (updater) =>
+    set((state) => ({
+      mutedUserIds:
+        typeof updater === "function" ? updater(state.mutedUserIds) : updater,
+    })),
 
   wordChoices: [],
   setWordChoices: (choices) => set({ wordChoices: choices }),
@@ -65,15 +70,16 @@ export const useRoomStore = create<RoomStore>((set) => ({
   revealedWord: "",
   setRevealedWord: (word) => set({ revealedWord: word }),
 
-  reset: () => set({
-    gameStarted: false,
-    roomNotFound: false,
-    ws: null,
-    roomState: null,
-    chatMessages: [],
-    mutedUserIds: [],
-    wordChoices: [],
-    currentWord: "",
-    revealedWord: "",
-  })
+  reset: () =>
+    set({
+      gameStarted: false,
+      roomNotFound: false,
+      ws: null,
+      roomState: null,
+      chatMessages: [],
+      mutedUserIds: [],
+      wordChoices: [],
+      currentWord: "",
+      revealedWord: "",
+    }),
 }));

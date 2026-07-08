@@ -18,14 +18,14 @@ export default function WaitingLobby({
   const { ws } = useRoomStore();
 
   const onStartGame = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "start_game" }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "start_game" });
     }
   };
 
   const onCloseRoom = () => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "close_room" }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "close_room" });
     }
   };
 
@@ -63,7 +63,7 @@ export default function WaitingLobby({
   const canStart = playerCount >= minPlayers;
 
   return (
-    <div className="bg-white rounded-none lg:rounded-4xl shadow-none lg:shadow-[0_12px_0_#94a3b8] flex flex-col items-center justify-center h-full min-h-0 border-y-2 lg:border-[6px] border-[#94a3b8] border-x-0 lg:border-x-[6px] relative overflow-y-auto overflow-x-hidden p-6 md:p-8 w-full">
+    <div className="bg-white rounded-none lg:rounded-4xl shadow-none lg:shadow-[0_12px_0_#94a3b8] flex flex-col items-center justify-center h-full min-h-0 border-y-2 lg:border-[6px] border-[#94a3b8] border-x-0 lg:border-x-[6px] relative p-6 md:p-8 w-full overflow-hidden">
       <div className="absolute top-0 inset-x-0 h-6 bg-slate-50/80 pointer-events-none z-20" />
 
       <h2
@@ -90,7 +90,11 @@ export default function WaitingLobby({
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
           <button
             onClick={handleCopyCode}
-            className={`shrink-0 h-auto sm:h-14 py-2 sm:py-0 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-[3px] sm:border-4 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center relative overflow-hidden flex-1 ${copiedCode ? "bg-[#4ade80] border-[#166534] shadow-[0_4px_0_#166534]" : "bg-[#60a5fa] border-[#1d4ed8] shadow-[0_4px_0_#1d4ed8]"}`}
+            className={`shrink-0 h-auto sm:h-14 py-2 sm:py-0 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-[3px] sm:border-4 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center relative overflow-hidden flex-1 ${
+              copiedCode
+                ? "bg-[#4ade80] border-[#166534] shadow-[0_4px_0_#166534]"
+                : "bg-[#60a5fa] border-[#1d4ed8] shadow-[0_4px_0_#1d4ed8]"
+            }`}
           >
             <div className="absolute top-0 inset-x-0 h-2 sm:h-3 bg-white/30 rounded-t-lg sm:rounded-t-xl pointer-events-none" />
             <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-white mr-2 drop-shadow-sm" />
@@ -104,7 +108,11 @@ export default function WaitingLobby({
 
           <button
             onClick={handleCopyLink}
-            className={`shrink-0 h-auto sm:h-14 py-2 sm:py-0 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-[3px] sm:border-4 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center relative overflow-hidden flex-1 ${copiedLink ? "bg-[#4ade80] border-[#166534] shadow-[0_4px_0_#166534]" : "bg-[#ffb74d] border-[#f57c00] shadow-[0_4px_0_#f57c00]"}`}
+            className={`shrink-0 h-auto sm:h-14 py-2 sm:py-0 px-3 sm:px-4 rounded-xl sm:rounded-2xl border-[3px] sm:border-4 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center relative overflow-hidden flex-1 ${
+              copiedLink
+                ? "bg-[#4ade80] border-[#166534] shadow-[0_4px_0_#166534]"
+                : "bg-[#ffb74d] border-[#f57c00] shadow-[0_4px_0_#f57c00]"
+            }`}
           >
             <div className="absolute top-0 inset-x-0 h-2 sm:h-3 bg-white/30 rounded-t-lg sm:rounded-t-xl pointer-events-none" />
             <Users className="w-4 h-4 sm:w-5 sm:h-5 text-white mr-2 drop-shadow-sm" />

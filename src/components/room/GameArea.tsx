@@ -52,8 +52,8 @@ export default function GameArea() {
   if (!gs) return null;
 
   const handleChooseWord = (word: string) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "word_chosen", word }));
+    if (ws && ws.connected) {
+      ws.emit("message", { type: "word_chosen", word });
     }
   };
 
@@ -242,7 +242,9 @@ export default function GameArea() {
             <div className="px-2 sm:px-4 flex items-center justify-center relative">
               <Clock className="w-3 h-3 sm:w-6 sm:h-6 text-[#1f2937] absolute opacity-20" />
               <span
-                className={`font-black text-[#1f2937] text-xs sm:text-2xl relative z-10 ${timeLeft <= 10 ? "animate-pulse text-red-600" : ""}`}
+                className={`font-black text-[#1f2937] text-xs sm:text-2xl relative z-10 ${
+                  timeLeft <= 10 ? "animate-pulse text-red-600" : ""
+                }`}
               >
                 {timeLeft}
               </span>
@@ -318,8 +320,8 @@ export default function GameArea() {
                         p.lastRoundPoints > 0
                           ? "text-[#4ade80]"
                           : p.lastRoundPoints < 0
-                            ? "text-[#f87171]"
-                            : "text-gray-400"
+                          ? "text-[#f87171]"
+                          : "text-gray-400"
                       }`}
                     >
                       {p.lastRoundPoints > 0 ? "+" : ""}

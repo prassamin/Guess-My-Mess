@@ -10,7 +10,7 @@ export default function CreditBadge() {
         className="pointer-events-auto group relative flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
       >
         {/* Main Plaque Background */}
-        <div className="absolute inset-0 bg-[#fbbf24] border-[4px] border-[#78350f] rounded-xl shadow-[0_6px_0_#78350f] transition-all group-hover:bg-[#f59e0b] group-active:shadow-[0_2px_0_#78350f] group-active:translate-y-1" />
+        <div className="absolute inset-0 bg-[#fbbf24] border-4 border-[#78350f] rounded-xl shadow-[0_6px_0_#78350f] transition-all group-hover:bg-[#f59e0b] group-active:shadow-[0_2px_0_#78350f] group-active:translate-y-1" />
         
         {/* Inner Plaque Highlight for 3D effect */}
         <div className="absolute top-1 inset-x-1 h-3 bg-white/30 rounded-t-lg pointer-events-none" />
@@ -36,7 +36,7 @@ export default function CreditBadge() {
 
           {/* Right Decorator */}
           <div className="absolute -right-2 -top-2 w-6 h-6 bg-[#ef4444] border-[3px] border-[#7f1d1d] rounded-full shadow-[0_2px_0_#7f1d1d] flex items-center justify-center z-10 animate-pulse">
-            <Code2 className="w-3 h-3 text-white stroke-[3]" />
+            <Code2 className="w-3 h-3 text-white stroke-3" />
           </div>
         </div>
       </Link>

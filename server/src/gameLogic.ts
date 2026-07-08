@@ -1,10 +1,40 @@
 import { redis } from "./db";
-import { appServer, gameTimers, clearGameTimer } from "./state";
+import { appServer, gameTimers, activeDrawers, roomCache, clearGameTimer } from "./state";
 import { RoomState } from "./types";
 import { getRandomWords } from "./utils/words";
 
+/** Save room to both Redis and in-memory cache */
+async function saveRoom(roomId: string, room: RoomState, ttl = 7200) {
+  roomCache.set(roomId, room); // always update cache first
+  try {
+    await redis.set(`room:${roomId}`, room, { ex: ttl });
+  } catch (e) {
+    console.error(`[saveRoom] Redis write failed for ${roomId}, cache updated:`, e);
+  }
+}
+
+/** Read room: try Redis first, fall back to in-memory cache */
+async function getRoom(roomId: string): Promise<RoomState | null> {
+  try {
+    const room: RoomState | null = await redis.get(`room:${roomId}`);
+    if (room) {
+      roomCache.set(roomId, room); // keep cache fresh
+      return room;
+    }
+  } catch (e) {
+    console.error(`[getRoom] Redis read failed for ${roomId}, trying cache:`, e);
+  }
+  // Fallback: in-memory cache
+  const cached = roomCache.get(roomId);
+  if (cached) {
+    console.warn(`[getRoom] Using in-memory cache for room ${roomId}`);
+    return cached;
+  }
+  return null;
+}
+
 export async function advanceGame(roomId: string) {
-  const room: RoomState | null = await redis.get(`room:${roomId}`);
+  const room = await getRoom(roomId);
   if (!room || room.status !== "playing" || !room.gameState) return;
 
   const gs = room.gameState;
@@ -15,6 +45,7 @@ export async function advanceGame(roomId: string) {
     gs.serverOnlyCurrentWord = gs.serverOnlyWordChoices?.[0] || "apple";
     gs.wordLength = gs.serverOnlyCurrentWord.length;
     gs.turnEndTime = Date.now() + (room.settings?.drawTime || 80) * 1000;
+    activeDrawers.set(roomId, drawer.id); // allow drawing events without Redis reads
 
     // Initialize hint indices
     const hintableIndices = [];
@@ -31,31 +62,28 @@ export async function advanceGame(roomId: string) {
     }
     gs.serverOnlyHintIndices = hintableIndices;
 
-    await redis.set(`room:${roomId}`, room, { ex: 7200 });
+    await saveRoom(roomId, room);
 
     const clientRoom = JSON.parse(JSON.stringify(room));
     delete clientRoom.gameState.serverOnlyCurrentWord;
     delete clientRoom.gameState.serverOnlyWordChoices;
-    appServer?.publish(
-      roomId,
-      JSON.stringify({ type: "room_state", room: clientRoom }),
-    );
+    appServer
+      ?.to(roomId)
+      .emit("room_state", { type: "room_state", room: clientRoom });
 
-    appServer?.publish(
-      `user:${drawer.id}`,
-      JSON.stringify({
-        type: "you_are_drawing",
-        word: gs.serverOnlyCurrentWord,
-      }),
-    );
+    appServer?.to(`user:${drawer.id}`).emit("you_are_drawing", {
+      type: "you_are_drawing",
+      word: gs.serverOnlyCurrentWord,
+    });
 
     clearGameTimer(roomId);
     gameTimers.set(
       roomId,
-      setTimeout(() => advanceGame(roomId), gs.turnEndTime - Date.now()),
+      setTimeout(() => advanceGame(roomId), gs.turnEndTime - Date.now())
     );
   } else if (gs.phase === "drawing") {
     gs.phase = "round_end";
+    activeDrawers.delete(roomId); // drawing phase ended
     const originalTurnEndTime = gs.turnEndTime;
     gs.turnEndTime = Date.now() + 5000;
 
@@ -64,7 +92,7 @@ export async function advanceGame(roomId: string) {
 
     if (gs.guessedCorrectly.length > 0) {
       const totalTime = (room.settings?.drawTime || 80) * 1000;
-      const roundStartTime = originalTurnEndTime - totalTime; // exact start time
+      const roundStartTime = originalTurnEndTime - totalTime;
 
       const drawerPlayer = room.players.find((p) => p.id === drawer.id);
       if (drawerPlayer) {
@@ -80,19 +108,18 @@ export async function advanceGame(roomId: string) {
             gs.serverOnlyGuessedTimes?.[guesserId] || Date.now();
           const timeTaken = Math.max(0, guessTime - roundStartTime);
 
-          // Calculate penalty based on how many hints were revealed at the time of the guess
           const fractionAtGuess = timeTaken / totalTime;
           let hintsRevealedAtGuess = 0;
           if (fractionAtGuess > 0.45) hintsRevealedAtGuess = 1;
           if (fractionAtGuess > 0.7) hintsRevealedAtGuess = 2;
           if (fractionAtGuess > 0.85) hintsRevealedAtGuess = 3;
 
-          const hintPenaltyMultiplier = 1 - hintsRevealedAtGuess * 0.15; // -15% per hint
+          const hintPenaltyMultiplier = 1 - hintsRevealedAtGuess * 0.15;
 
           const timeLeft = Math.max(0, totalTime - timeTaken);
 
           let points = Math.floor(
-            (timeLeft / totalTime) * 300 * hintPenaltyMultiplier,
+            (timeLeft / totalTime) * 300 * hintPenaltyMultiplier
           );
           if (index === 0) points += 100;
           else if (index === 1) points += 75;
@@ -105,28 +132,21 @@ export async function advanceGame(roomId: string) {
       });
     }
 
-    await redis.set(`room:${roomId}`, room, { ex: 7200 });
-    // Add to sync queue for bulk background DB sync
-    await redis.sadd("sync_queue", roomId);
+    await saveRoom(roomId, room);
+    try { await redis.sadd("sync_queue", roomId); } catch {}
 
-    appServer?.publish(
-      roomId,
-      JSON.stringify({
-        type: "chat",
-        userId: "system",
-        name: "System",
-        text: `The word was ${gs.serverOnlyCurrentWord}!`,
-        timestamp: Date.now(),
-      }),
-    );
+    appServer?.to(roomId).emit("chat", {
+      type: "chat",
+      userId: "system",
+      name: "System",
+      text: `The word was ${gs.serverOnlyCurrentWord}!`,
+      timestamp: Date.now(),
+    });
 
-    appServer?.publish(
-      roomId,
-      JSON.stringify({
-        type: "round_end",
-        word: gs.serverOnlyCurrentWord,
-      }),
-    );
+    appServer?.to(roomId).emit("round_end", {
+      type: "round_end",
+      word: gs.serverOnlyCurrentWord,
+    });
 
     const clientRoom = JSON.parse(JSON.stringify(room));
     if (clientRoom.gameState) {
@@ -135,15 +155,14 @@ export async function advanceGame(roomId: string) {
       delete clientRoom.gameState.serverOnlyGuessedTimes;
       delete clientRoom.gameState.serverOnlyHintIndices;
     }
-    appServer?.publish(
-      roomId,
-      JSON.stringify({ type: "room_state", room: clientRoom }),
-    );
+    appServer
+      ?.to(roomId)
+      .emit("room_state", { type: "room_state", room: clientRoom });
 
     clearGameTimer(roomId);
     gameTimers.set(
       roomId,
-      setTimeout(() => advanceGame(roomId), 5000),
+      setTimeout(() => advanceGame(roomId), 5000)
     );
   } else if (gs.phase === "round_end") {
     if ((gs as any).drawerLeft) delete (gs as any).drawerLeft;
@@ -155,21 +174,21 @@ export async function advanceGame(roomId: string) {
 
     if (gs.currentRound > (room.settings?.rounds || 3)) {
       room.status = "finished";
-      await redis.set(`room:${roomId}`, room, { ex: 7200 });
-      appServer?.publish(roomId, JSON.stringify({ type: "room_state", room }));
-      // Add to sync queue for final DB sync
-      await redis.sadd("sync_queue", roomId);
+      roomCache.delete(roomId); // game over, remove from cache
+      activeDrawers.delete(roomId);
+      await saveRoom(roomId, room);
+      appServer?.to(roomId).emit("room_state", { type: "room_state", room });
+      try { await redis.sadd("sync_queue", roomId); } catch {}
       return;
     }
 
-    // Add to sync queue after each full round to update DB incrementally
-    await redis.sadd("sync_queue", roomId);
+    try { await redis.sadd("sync_queue", roomId); } catch {}
 
     gs.phase = "choosing";
     gs.serverOnlyWordChoices = getRandomWords(
       room.settings?.wordCount || 3,
       room.settings?.customWords,
-      room.settings?.customWordsOnly,
+      room.settings?.customWordsOnly
     );
     gs.guessedCorrectly = [];
     gs.serverOnlyGuessedTimes = {};
@@ -178,7 +197,7 @@ export async function advanceGame(roomId: string) {
     gs.serverOnlyCurrentWord = "";
     gs.turnEndTime = Date.now() + 15000;
 
-    await redis.set(`room:${roomId}`, room, { ex: 7200 });
+    await saveRoom(roomId, room);
 
     const clientRoom = JSON.parse(JSON.stringify(room));
     if (clientRoom.gameState) {
@@ -187,26 +206,20 @@ export async function advanceGame(roomId: string) {
       delete clientRoom.gameState.serverOnlyGuessedTimes;
       delete clientRoom.gameState.serverOnlyHintIndices;
     }
-    appServer?.publish(
-      roomId,
-      JSON.stringify({ type: "room_state", room: clientRoom }),
-    );
+    appServer
+      ?.to(roomId)
+      .emit("room_state", { type: "room_state", room: clientRoom });
 
     const newDrawer = room.players[gs.currentTurnIndex];
-    appServer?.publish(
-      `user:${newDrawer.id}`,
-      JSON.stringify({
-        type: "choose_word",
-        choices: gs.serverOnlyWordChoices,
-      }),
-    );
+    appServer?.to(`user:${newDrawer.id}`).emit("choose_word", {
+      type: "choose_word",
+      choices: gs.serverOnlyWordChoices,
+    });
 
     clearGameTimer(roomId);
     gameTimers.set(
       roomId,
-      setTimeout(() => advanceGame(roomId), 15000),
+      setTimeout(() => advanceGame(roomId), 15000)
     );
   }
 }
-
-

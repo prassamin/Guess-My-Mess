@@ -12,6 +12,7 @@ export type RoomState = {
   db_game_id?: string;
   hostId: string;
   status: "waiting" | "playing" | "finished";
+  lastActivity?: number;
   settings?: {
     maxPlayers: number;
     rounds: number;
