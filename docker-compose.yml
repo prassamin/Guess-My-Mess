@@ -8,10 +8,9 @@ services:
     container_name: guess-my-mess-app
     restart: always
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "3000:3000"                         # Next.js frontend (fixed)
+      - "${BACKEND_PORT}:${BACKEND_PORT}"   # Socket.io backend (dynamic)
     environment:
-      # Automatically picked up by Coolify, or you can hardcode/reference them here
       - NODE_ENV=production
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}

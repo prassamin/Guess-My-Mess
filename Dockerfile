@@ -32,6 +32,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Backend port — overridden at runtime by docker-compose / Coolify env
+ARG BACKEND_PORT=8000
+ENV BACKEND_PORT=${BACKEND_PORT}
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -48,14 +52,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=deps --chown=nextjs:nodejs /app/server/node_modules ./server/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/server ./server
 
-# Expose both frontend and backend ports
+# Expose both ports
 EXPOSE 3000
-EXPOSE 3001
+EXPOSE ${BACKEND_PORT}
 
-# Create a startup script to run both processes
+# Startup script: run backend and frontend concurrently
 RUN echo '#!/bin/sh' > /start.sh && \
-    echo 'echo "Starting Backend..."' >> /start.sh && \
-    echo 'cd /app/server && bun run src/index.ts & BACKEND_PID=$!' >> /start.sh && \
+    echo 'echo "Starting Backend on port $BACKEND_PORT..."' >> /start.sh && \
+    echo 'cd /app/server && BACKEND_PORT=$BACKEND_PORT bun run src/index.ts & BACKEND_PID=$!' >> /start.sh && \
     echo 'echo "Starting Frontend..."' >> /start.sh && \
     echo 'cd /app && HOSTNAME="0.0.0.0" node server.js & FRONTEND_PID=$!' >> /start.sh && \
     echo 'wait -n $BACKEND_PID $FRONTEND_PID' >> /start.sh && \
