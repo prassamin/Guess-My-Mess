@@ -70,7 +70,7 @@ RUN echo '#!/bin/sh' > /start.sh && \
     echo 'echo "Starting Frontend on port 3001..."' >> /start.sh && \
     echo 'cd /app && PORT=3001 HOSTNAME="0.0.0.0" node server.js &' >> /start.sh && \
     echo 'echo "Starting Caddy reverse proxy on port 3000..."' >> /start.sh && \
-    echo 'caddy run --config /app/Caddyfile --disable-admin &' >> /start.sh && \
+    echo 'caddy run --config /app/Caddyfile &' >> /start.sh && \
     echo 'trap "kill \$(jobs -p) 2>/dev/null" EXIT' >> /start.sh && \
     echo 'wait' >> /start.sh && \
     chmod +x /start.sh
