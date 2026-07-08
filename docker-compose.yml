@@ -8,8 +8,7 @@ services:
     container_name: guess-my-mess-app
     restart: always
     ports:
-      - "3000:3000"                         # Next.js frontend (fixed)
-      - "${BACKEND_PORT}:${BACKEND_PORT}"   # Socket.io backend (dynamic)
+      - "3000:3000"                         # Caddy reverse proxy (routes frontend + Socket.IO internally)
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}

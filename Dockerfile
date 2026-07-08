@@ -31,10 +31,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV XDG_DATA_HOME=/tmp/caddy
 
 # Backend port — overridden at runtime by docker-compose / Coolify env
 ARG BACKEND_PORT=8000
 ENV BACKEND_PORT=${BACKEND_PORT}
+
+# Install Caddy reverse proxy (handles WebSocket transparently)
+RUN apk add --no-cache caddy
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -42,6 +46,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Set correct permissions
 RUN mkdir .next && chown nextjs:nodejs .next
+RUN mkdir -p /tmp/caddy && chown nextjs:nodejs /tmp/caddy
 
 # Copy Next.js standalone files
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
@@ -52,17 +57,22 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=deps --chown=nextjs:nodejs /app/server/node_modules ./server/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/server ./server
 
-# Expose both ports
-EXPOSE 3000
-EXPOSE ${BACKEND_PORT}
+# Copy Caddy reverse proxy config
+COPY --chown=nextjs:nodejs Caddyfile ./Caddyfile
 
-# Startup script: run backend and frontend concurrently
+# Only port 3000 is exposed — Caddy routes everything internally
+EXPOSE 3000
+
+# Startup script: run backend, frontend, and Caddy reverse proxy
 RUN echo '#!/bin/sh' > /start.sh && \
     echo 'echo "Starting Backend on port $BACKEND_PORT..."' >> /start.sh && \
-    echo 'cd /app/server && BACKEND_PORT=$BACKEND_PORT bun run src/index.ts & BACKEND_PID=$!' >> /start.sh && \
-    echo 'echo "Starting Frontend..."' >> /start.sh && \
-    echo 'cd /app && HOSTNAME="0.0.0.0" node server.js & FRONTEND_PID=$!' >> /start.sh && \
-    echo 'wait -n $BACKEND_PID $FRONTEND_PID' >> /start.sh && \
+    echo 'cd /app/server && BACKEND_PORT=$BACKEND_PORT bun run src/index.ts &' >> /start.sh && \
+    echo 'echo "Starting Frontend on port 3001..."' >> /start.sh && \
+    echo 'cd /app && PORT=3001 HOSTNAME="0.0.0.0" node server.js &' >> /start.sh && \
+    echo 'echo "Starting Caddy reverse proxy on port 3000..."' >> /start.sh && \
+    echo 'caddy run --config /app/Caddyfile --disable-admin &' >> /start.sh && \
+    echo 'trap "kill \$(jobs -p) 2>/dev/null" EXIT' >> /start.sh && \
+    echo 'wait' >> /start.sh && \
     chmod +x /start.sh
 
 USER nextjs

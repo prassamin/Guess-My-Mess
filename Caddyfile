@@ -1,0 +1,11 @@
+:3000 {
+    @backend {
+        path /socket.io/*
+    }
+    handle @backend {
+        reverse_proxy localhost:{$BACKEND_PORT:8000}
+    }
+    handle {
+        reverse_proxy localhost:3001
+    }
+}
