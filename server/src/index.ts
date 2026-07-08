@@ -18,8 +18,23 @@ import { calculateTTL } from "./utils/room";
 import { levenshtein, getRandomWords } from "./utils/words";
 import { startBackgroundTasks } from "./backgroundTasks";
 
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+  if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      status: "ok",
+      service: "Guess My Mess Server",
+      uptime: Math.floor(process.uptime()),
+      rooms: roomCache.size,
+      timestamp: new Date().toISOString(),
+    }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
 const io = new Server(httpServer, {
+  path: "/v1/game/ws",
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
@@ -174,6 +189,7 @@ io.on("connection", (socket) => {
               await redis.set(`room:${roomId}`, room, {
                 ex: calculateTTL(room),
               });
+              roomCache.set(roomId, room); // keep cache in sync with guessedCorrectly + times
 
               const correctMsg = {
                 type: "chat",
