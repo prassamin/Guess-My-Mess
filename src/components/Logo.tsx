@@ -13,8 +13,8 @@ export default function Logo({ className = "", size = 'large', onClick }: LogoPr
     isSmall ? 'hover:scale-125 hover:-translate-y-1' : 'hover:scale-110'
   }`;
 
-  const topRowSize = isSmall ? 'text-2xl sm:text-3xl' : 'text-5xl sm:text-7xl md:text-[100px] lg:text-[130px]';
-  const bottomRowSize = isSmall ? 'text-xl sm:text-2xl' : 'text-4xl sm:text-6xl md:text-[80px] lg:text-[110px]';
+  const topRowSize = isSmall ? 'text-2xl sm:text-3xl' : 'text-[60px] min-[400px]:text-7xl md:text-[100px] lg:text-[130px]';
+  const bottomRowSize = isSmall ? 'text-xl sm:text-2xl' : 'text-5xl min-[400px]:text-6xl md:text-[80px] lg:text-[110px]';
 
   const spacingTop = isSmall ? 'space-x-[2px] sm:space-x-1' : 'space-x-1 sm:space-x-3 mb-2';
   const spacingBottom = isSmall ? 'space-x-[2px] sm:space-x-1 mt-1 sm:mt-1' : 'space-x-1 sm:space-x-2 mt-2 sm:mt-4';
