@@ -27,7 +27,8 @@ export const generateMetadata = async (): Promise<Metadata> => {
       default: "Guess My Mess | Free Multiplayer Drawing & Guessing Game",
       template: "%s | Guess My Mess",
     },
-    description: "Ready, set, draw! Join the ultimate drawing party with your friends. Sketch hilarious prompts, guess crazy doodles, and see who takes the crown!",
+    description:
+      "Ready, set, draw! Join the ultimate drawing party with your friends. Sketch hilarious prompts, guess crazy doodles, and see who takes the crown!",
     keywords: [
       "draw",
       "guess",
@@ -90,9 +91,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="scrollbar-hidden">
       <body
-        className={`${fredoka.className} bg-linear-to-b from-[#0ea5e9] via-[#38bdf8] to-[#bae6fd] text-slate-800 min-h-dvh`}
+        className={`${fredoka.className} bg-linear-to-b from-[#0ea5e9] via-[#38bdf8] to-[#bae6fd] text-slate-800 min-h-dvh scrollbar-hidden`}
       >
         <Providers>{children}</Providers>
       </body>

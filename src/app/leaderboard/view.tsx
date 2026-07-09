@@ -7,7 +7,9 @@ import SkyBackground from "@/components/SkyBackground";
 
 function Av({ src, className }: { src?: string; className?: string }) {
   return (
-    <div className={`bg-white overflow-hidden flex items-center justify-center shrink-0 ${className}`}>
+    <div
+      className={`bg-white overflow-hidden flex items-center justify-center shrink-0 ${className}`}
+    >
       {src ? (
         <img src={src} className="w-full h-full object-cover" alt="" />
       ) : (
@@ -19,11 +21,38 @@ function Av({ src, className }: { src?: string; className?: string }) {
 
 const TOP3_CFG = [
   // Gold
-  { rankColor: "text-amber-700",  ring: "ring-amber-400",  cardBg: "bg-gradient-to-r from-amber-300 to-yellow-200",  border: "border-amber-400",  nameTxt: "text-amber-900", scoreTxt: "text-amber-800", ptsTxt: "text-amber-600", delay: 0.2  },
+  {
+    rankColor: "text-amber-700",
+    ring: "ring-amber-400",
+    cardBg: "bg-linear-to-r from-amber-300 to-yellow-200",
+    border: "border-amber-400",
+    nameTxt: "text-amber-900",
+    scoreTxt: "text-amber-800",
+    ptsTxt: "text-amber-600",
+    delay: 0.2,
+  },
   // Silver
-  { rankColor: "text-slate-500",  ring: "ring-slate-300",  cardBg: "bg-gradient-to-r from-slate-300 to-slate-200",   border: "border-slate-300",  nameTxt: "text-slate-800", scoreTxt: "text-slate-700", ptsTxt: "text-slate-500", delay: 0.35 },
+  {
+    rankColor: "text-slate-500",
+    ring: "ring-slate-300",
+    cardBg: "bg-linear-to-r from-slate-300 to-slate-200",
+    border: "border-slate-300",
+    nameTxt: "text-slate-800",
+    scoreTxt: "text-slate-700",
+    ptsTxt: "text-slate-500",
+    delay: 0.35,
+  },
   // Bronze
-  { rankColor: "text-orange-800", ring: "ring-orange-400", cardBg: "bg-gradient-to-r from-orange-400 to-amber-300",  border: "border-orange-400", nameTxt: "text-orange-950", scoreTxt: "text-orange-900", ptsTxt: "text-orange-700", delay: 0.5  },
+  {
+    rankColor: "text-orange-800",
+    ring: "ring-orange-400",
+    cardBg: "bg-linear-to-r from-orange-400 to-amber-300",
+    border: "border-orange-400",
+    nameTxt: "text-orange-950",
+    scoreTxt: "text-orange-900",
+    ptsTxt: "text-orange-700",
+    delay: 0.5,
+  },
 ];
 
 export default function LeaderboardView({ players }: { players: any[] }) {
@@ -83,32 +112,46 @@ export default function LeaderboardView({ players }: { players: any[] }) {
                   className={`w-full ${c.cardBg} border ${c.border} rounded-2xl flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3 sm:py-3.5 cursor-pointer hover:-translate-y-0.5 hover:brightness-105 transition-all shadow-sm`}
                 >
                   {/* Big rank number */}
-                  <span className={`font-black ${c.rankColor} text-5xl sm:text-6xl leading-none w-10 sm:w-14 text-center shrink-0 tabular-nums`}>
+                  <span
+                    className={`font-black ${c.rankColor} text-5xl sm:text-6xl leading-none w-10 sm:w-14 text-center shrink-0 tabular-nums`}
+                  >
                     {pi + 1}
                   </span>
 
                   {/* Avatar */}
                   <Av
                     src={p.avatar}
-                    className={`${pi === 0 ? "w-14 h-14 sm:w-16 sm:h-16" : "w-11 h-11 sm:w-13 sm:h-13"} rounded-full ring-2 ${c.ring}`}
+                    className={`${
+                      pi === 0
+                        ? "w-14 h-14 sm:w-16 sm:h-16"
+                        : "w-11 h-11 sm:w-13 sm:h-13"
+                    } rounded-full ring-2 ${c.ring}`}
                   />
 
                   {/* Name & handle */}
                   <div className="flex-1 min-w-0">
-                    <p className={`font-black ${c.nameTxt} text-sm sm:text-base uppercase truncate leading-tight`}>
+                    <p
+                      className={`font-black ${c.nameTxt} text-sm sm:text-base uppercase truncate leading-tight`}
+                    >
                       {p.name}
                     </p>
-                    <p className={`${c.ptsTxt} text-[11px] sm:text-xs font-medium truncate opacity-70`}>
+                    <p
+                      className={`${c.ptsTxt} text-[11px] sm:text-xs font-medium truncate opacity-70`}
+                    >
                       @{p.username}
                     </p>
                   </div>
 
                   {/* Score */}
                   <div className="text-right shrink-0">
-                    <p className={`font-black ${c.scoreTxt} text-sm sm:text-lg tabular-nums leading-tight`}>
+                    <p
+                      className={`font-black ${c.scoreTxt} text-sm sm:text-lg tabular-nums leading-tight`}
+                    >
                       {p.total_score?.toLocaleString()}
                     </p>
-                    <p className={`${c.ptsTxt} text-[10px] font-black uppercase tracking-widest`}>
+                    <p
+                      className={`${c.ptsTxt} text-[10px] font-black uppercase tracking-widest`}
+                    >
                       pts
                     </p>
                   </div>
@@ -150,7 +193,11 @@ export default function LeaderboardView({ players }: { players: any[] }) {
               {/* Avatar */}
               <div className="w-10 h-10 rounded-full bg-white overflow-hidden flex items-center justify-center ring-2 ring-white/80 shrink-0">
                 {player.avatar ? (
-                  <img src={player.avatar} className="w-full h-full object-cover" alt="" />
+                  <img
+                    src={player.avatar}
+                    className="w-full h-full object-cover"
+                    alt=""
+                  />
                 ) : (
                   <User className="w-5 h-5 text-slate-300" strokeWidth={2} />
                 )}

@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { revalidateProfile } from "@/actions/profile";
+import { useOnClickOutside } from "@/hooks/useOnClickOutside";
+import { motion } from "framer-motion";
 import {
   TOP_OPTIONS,
   ACCESSORY_OPTIONS,
@@ -11,23 +13,20 @@ import {
   MOUTH_OPTIONS,
   SKIN_COLOR_OPTIONS,
 } from "@/lib/dicebear";
-
-const textStroke = {
-  WebkitTextStroke: "1.5px #1f2937",
-  color: "white",
-};
+import { X, Shuffle, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function EditProfileModal({
   profile,
-  isOpen,
   onClose,
   onSaveSuccess,
 }: {
   profile: any;
-  isOpen: boolean;
   onClose: () => void;
   onSaveSuccess: (name: string, avatar: string) => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useOnClickOutside(modalRef as any, onClose);
+
   const [editName, setEditName] = useState(profile.name || "");
   const [editAvatar, setEditAvatar] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -81,31 +80,28 @@ export default function EditProfileModal({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      setAvatarOptions((prev) => ({
-        ...prev,
-        seed: Math.random().toString(36).substring(7),
-      }));
-    }
-  }, [isOpen]);
+    setAvatarOptions((prev) => ({
+      ...prev,
+      seed: Math.random().toString(36).substring(7),
+    }));
+  }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarOptions.seed}&top=${avatarOptions.top}`;
-      if (avatarOptions.accessories === "none")
-        url += "&accessoriesProbability=0";
-      else
-        url += `&accessoriesProbability=100&accessories=${avatarOptions.accessories}`;
+    let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarOptions.seed}&top=${avatarOptions.top}`;
+    if (avatarOptions.accessories === "none")
+      url += "&accessoriesProbability=0";
+    else
+      url += `&accessoriesProbability=100&accessories=${avatarOptions.accessories}`;
 
-      if (avatarOptions.facialHair === "none")
-        url += "&facialHairProbability=0";
-      else
-        url += `&facialHairProbability=100&facialHair=${avatarOptions.facialHair}`;
+    if (avatarOptions.facialHair === "none")
+      url += "&facialHairProbability=0";
+    else
+      url += `&facialHairProbability=100&facialHair=${avatarOptions.facialHair}`;
 
-      url += `&hairColor=${avatarOptions.hairColor}&clothing=${avatarOptions.clothing}&skinColor=${avatarOptions.skinColor}&eyes=${avatarOptions.eyes}&mouth=${avatarOptions.mouth}`;
-      setEditAvatar(url);
-    }
-  }, [avatarOptions, isOpen]);
+    url += `&hairColor=${avatarOptions.hairColor}&clothing=${avatarOptions.clothing}&skinColor=${avatarOptions.skinColor}&eyes=${avatarOptions.eyes}&mouth=${avatarOptions.mouth}`;
+    setEditAvatar(url);
+  }, [avatarOptions]);
+  
   const handleSaveProfile = async () => {
     if (!editName.trim()) return;
     setIsSaving(true);
@@ -131,436 +127,247 @@ export default function EditProfileModal({
     setIsSaving(false);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] border-[6px] border-[#0f172a] shadow-[0_12px_0_#0f172a] p-8 relative flex flex-col">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm"
+    >
+      <motion.div 
+        ref={modalRef} 
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+        className="bg-white/95 w-full max-w-2xl rounded-4xl sm:rounded-[2.5rem] border border-white shadow-2xl p-5 sm:p-8 relative flex flex-col backdrop-blur-xl max-h-[95dvh]"
+      >
         <button
           onClick={() => onClose()}
-          className="absolute top-4 right-4 w-12 h-12 bg-[#f87171] border-4 border-[#b91c1c] rounded-xl flex items-center justify-center shadow-[0_4px_0_#b91c1c] active:translate-y-1 active:shadow-none text-white transition-colors z-10"
+          className="absolute -top-3 -right-3 w-10 h-10 sm:w-12 sm:h-12 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-lg hover:scale-105 hover:text-red-500 hover:border-red-200 active:scale-95 text-slate-400 transition-all z-10"
         >
-          <svg
-            className="w-6 h-6 stroke-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <X className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={3} />
         </button>
 
-        <h2 className="text-3xl font-black text-[#1f2937] uppercase tracking-widest mb-6 text-center">
+        <h2 className="hidden sm:block text-2xl font-black text-slate-800 uppercase tracking-widest mb-6 text-center">
           Edit Profile
         </h2>
 
-        <div className="flex flex-col md:flex-row gap-8 items-start">
+        <div className="flex flex-col md:flex-row gap-6 sm:gap-8 items-start">
           {/* Left: Avatar Preview */}
-          <div className="w-full md:w-1/3 flex flex-col items-center gap-4">
-            <div className="w-48 h-48 bg-[#f8fafc] rounded-4xl border-8 border-[#94a3b8] shrink-0 overflow-hidden shadow-[0_8px_0_#94a3b8] flex items-center justify-center relative">
+          <div className="w-full md:w-1/3 flex flex-row md:flex-col items-center justify-center gap-4">
+            <div className="w-28 h-28 sm:w-48 sm:h-48 bg-slate-50 rounded-3xl sm:rounded-4xl border border-slate-200 shrink-0 overflow-hidden shadow-inner flex items-center justify-center relative">
               <img
                 src={editAvatar}
                 alt="Preview"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 shadow-[inset_0_8px_16px_rgba(0,0,0,0.1)] pointer-events-none rounded-4xl"></div>
             </div>
 
             <button
               onClick={handleRandomizeAvatar}
-              className="w-full bg-[#34d399] px-4 py-3 rounded-xl border-4 border-[#047857] shadow-[0_4px_0_#047857] text-white font-black uppercase tracking-wider text-sm active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2"
+              className="flex-1 md:w-full bg-linear-to-b from-emerald-400 to-emerald-500 h-12 rounded-xl shadow-[0_4px_0_#047857] text-white font-black uppercase tracking-wider text-xs sm:text-sm active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 group px-4"
             >
-              <svg
-                className="w-5 h-5 stroke-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
+              <Shuffle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
               Randomize
             </button>
           </div>
 
           {/* Right: Controls */}
           <div className="w-full md:w-2/3 flex flex-col gap-4">
-            <div className="w-full mb-2">
-              <label className="block text-[#64748b] font-black text-sm uppercase tracking-widest mb-2 px-1">
+            <div className="w-full mb-0 sm:mb-2">
+              <label className="block text-slate-400 font-bold text-xs sm:text-sm uppercase tracking-widest mb-1.5 sm:mb-2 px-1">
                 Display Name
               </label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-5 py-4 bg-[#f8fafc] border-[6px] border-[#94a3b8] rounded-3xl text-2xl font-black text-[#1f2937] shadow-[inset_0_4px_8px_rgba(0,0,0,0.05)] focus:outline-none focus:border-[#60a5fa] focus:ring-4 focus:ring-[#60a5fa]/30 transition-all placeholder:text-[#94a3b8]"
+                className="w-full px-4 sm:px-5 py-2.5 sm:py-3 bg-slate-50 border-2 border-slate-100 rounded-xl sm:rounded-2xl text-lg sm:text-xl font-black text-slate-800 focus:outline-none focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-400/20 transition-all placeholder:text-slate-300"
                 maxLength={16}
                 placeholder="Your Name"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-2">
               {/* Hair / Headwear */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Hair / Hat
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => cycleOption("top", TOP_OPTIONS, -1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() => cycleOption("top", TOP_OPTIONS, 1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Hair Color */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Hair Color
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => cycleOption("hairColor", COLOR_OPTIONS, -1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() => cycleOption("hairColor", COLOR_OPTIONS, 1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Accessories */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Glasses
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() =>
                       cycleOption("accessories", ACCESSORY_OPTIONS, -1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() =>
                       cycleOption("accessories", ACCESSORY_OPTIONS, 1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Clothes */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Clothing
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() =>
                       cycleOption("clothing", CLOTHING_OPTIONS, -1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() => cycleOption("clothing", CLOTHING_OPTIONS, 1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Skin Color */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Skin Tone
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() =>
                       cycleOption("skinColor", SKIN_COLOR_OPTIONS, -1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() =>
                       cycleOption("skinColor", SKIN_COLOR_OPTIONS, 1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Eyes */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Eyes
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => cycleOption("eyes", EYES_OPTIONS, -1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() => cycleOption("eyes", EYES_OPTIONS, 1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Mouth */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Mouth
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => cycleOption("mouth", MOUTH_OPTIONS, -1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() => cycleOption("mouth", MOUTH_OPTIONS, 1)}
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Facial Hair */}
               <div className="flex flex-col">
-                <span className="text-[#64748b] font-black text-sm uppercase tracking-widest mb-1.5 px-1">
+                <span className="text-slate-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-1.5 px-1 truncate">
                   Facial Hair
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() =>
                       cycleOption("facialHair", FACIAL_HAIR_OPTIONS, -1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={() =>
                       cycleOption("facialHair", FACIAL_HAIR_OPTIONS, 1)
                     }
-                    className="flex-1 h-12 bg-white border-4 border-[#94a3b8] rounded-xl shadow-[0_4px_0_#94a3b8] active:translate-y-1 active:shadow-none text-[#1f2937] font-black hover:bg-gray-50 transition-colors flex items-center justify-center"
+                    className="flex-1 h-8 sm:h-10 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm hover:border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <svg
-                      className="w-6 h-6 stroke-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 </div>
               </div>
@@ -569,16 +376,16 @@ export default function EditProfileModal({
             <button
               onClick={handleSaveProfile}
               disabled={isSaving}
-              className="w-full mt-6 bg-[#fbbf24] border-[6px] border-[#b45309] rounded-3xl shadow-[0_8px_0_#b45309] active:translate-y-2 active:shadow-none py-5 text-white text-3xl font-black uppercase disabled:opacity-50 transition-all flex items-center justify-center relative overflow-hidden group"
+              className="w-full mt-4 sm:mt-6 h-14 sm:h-16 bg-linear-to-b from-sky-400 to-sky-500 rounded-xl sm:rounded-2xl shadow-[0_4px_0_#0369a1] active:translate-y-1 active:shadow-none text-white text-lg sm:text-xl font-black uppercase disabled:opacity-50 transition-all flex items-center justify-center relative overflow-hidden group shrink-0 mb-2"
             >
-              <div className="absolute top-0 inset-x-0 h-4 bg-white/30 rounded-t-lg pointer-events-none" />
-              <span style={textStroke}>
+              <div className="absolute top-0 inset-x-0 h-4 bg-white/20 rounded-t-xl sm:rounded-t-2xl pointer-events-none" />
+              <span>
                 {isSaving ? "Saving..." : "Save Changes"}
               </span>
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

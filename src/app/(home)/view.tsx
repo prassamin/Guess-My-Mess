@@ -10,6 +10,7 @@ import LogoBlock from "@/components/lobby/LogoBlock";
 import AuthBlock from "@/components/lobby/AuthBlock";
 import CreditBadge from "@/components/lobby/CreditBadge";
 import { useAppStore } from "@/store/app-store";
+import { AnimatePresence } from "framer-motion";
 
 export default function HomeView({ initialUser }: { initialUser: any }) {
   const [guestLoading, setGuestLoading] = useState(false);
@@ -156,12 +157,15 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
         />
       </div>
 
-      <RoomModal
-        isOpen={showRoomModal}
-        onClose={() => setShowRoomModal(false)}
-        user={activeUser}
-        initialMode={modalMode}
-      />
+      <AnimatePresence>
+        {showRoomModal && (
+          <RoomModal
+            onClose={() => setShowRoomModal(false)}
+            user={activeUser}
+            initialMode={modalMode}
+          />
+        )}
+      </AnimatePresence>
 
       <CreditBadge />
     </main>
