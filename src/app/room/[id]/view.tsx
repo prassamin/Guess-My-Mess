@@ -121,7 +121,8 @@ export default function RoomView({ roomId }: { roomId: string }) {
   useEffect(() => {
     if (!userId || showJoinModal) return;
 
-    const socket = io(NEXT_PUBLIC_SOCKET_URL.replace("ws://", "http://"), {
+    const socket = io(NEXT_PUBLIC_SOCKET_URL.replace("ws://", "http://").replace("wss://", "https://"), {
+      path: "/v1/game/ws",
       query: {
         roomId,
         userId,

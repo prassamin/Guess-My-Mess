@@ -52,7 +52,7 @@ export default function ChatBox() {
                 <span className="font-black text-[#1f2937] mr-2">
                   {msg.name}:
                 </span>
-                <span className="font-medium text-[#475569] break-words">
+                <span className="font-medium text-[#475569] wrap-break-word">
                   {msg.text}
                 </span>
               </p>
