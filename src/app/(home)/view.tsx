@@ -91,29 +91,29 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
     if (!name.trim()) return;
     setGuestLoading(true);
 
-    // Always prioritize the avatar from the profiles table.
-    // Guests or anonymous users will fall back to the dicebear seed.
     const finalAvatarUrl =
       user?.avatar ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const isGuest = !user || user.is_anonymous;
 
-    if (session?.user) {
-      await supabase.auth.updateUser({
-        data: {
-          full_name: name.trim(),
-          avatar_url: finalAvatarUrl,
-        },
-      });
-      setGuestLoading(false);
-      setModalMode("menu");
-      setShowRoomModal(true);
+    if (!isGuest) {
+      // For authenticated users, only update if something changed
+      const currentName = user.user_metadata?.full_name;
+      const currentAvatar = user.user_metadata?.avatar_url || user.avatar;
+      
+      if (name.trim() !== currentName || finalAvatarUrl !== currentAvatar) {
+        await supabase.auth.updateUser({
+          data: {
+            full_name: name.trim(),
+            avatar_url: finalAvatarUrl,
+          },
+        });
+      }
     } else {
+      // For guest users, update local state instantly without network requests
       const fakeUser = {
-        id: "guest-" + Math.random().toString(36).substring(2, 15),
+        id: user?.id || "guest-" + Math.random().toString(36).substring(2, 15),
         is_anonymous: true,
         user_metadata: {
           full_name: name.trim(),
@@ -123,10 +123,11 @@ export default function HomeView({ initialUser }: { initialUser: any }) {
 
       localStorage.setItem("draw_guest_user", JSON.stringify(fakeUser));
       setUser(fakeUser);
-      setGuestLoading(false);
-      setModalMode("menu");
-      setShowRoomModal(true);
     }
+
+    setGuestLoading(false);
+    setModalMode("menu");
+    setShowRoomModal(true);
   };
 
   return (
