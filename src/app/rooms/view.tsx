@@ -6,7 +6,6 @@ import { ChevronLeft, Users, Clock, Hash, RefreshCcw } from "lucide-react";
 import SkyBackground from "@/components/SkyBackground";
 import { getPublicRooms } from "@/actions/room";
 
-
 export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
   const router = useRouter();
   const [rooms, setRooms] = useState<any[]>(initialRooms);
@@ -19,107 +18,102 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
     setRefreshing(false);
   };
 
-
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-[#87CEEB] font-sans selection:bg-[#fbbf24] selection:text-[#78350f]">
+    <div className="min-h-screen w-full relative overflow-hidden bg-[#87CEEB] font-sans selection:bg-sky-200 selection:text-sky-900">
       <SkyBackground />
 
       {/* Navigation Header */}
-      <div className="absolute top-6 inset-x-6 z-20 flex justify-between items-center">
+      <div className="absolute top-6 inset-x-4 sm:inset-x-8 z-20 flex justify-between items-center max-w-5xl mx-auto w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)]">
         <button
           onClick={() => router.push("/")}
-          className="h-10 sm:h-14 px-4 sm:px-6 bg-white border-2 sm:border-[5px] border-[#94a3b8] rounded-xl sm:rounded-2xl shadow-[0_4px_0_#94a3b8] sm:shadow-[0_6px_0_#94a3b8] active:translate-y-1.5 active:shadow-none transition-all flex items-center justify-center text-[#1f2937] font-black uppercase tracking-widest relative overflow-hidden group"
+          className="h-12 sm:h-14 px-5 sm:px-6 bg-white/90 backdrop-blur-md border-2 border-white rounded-2xl shadow-lg active:translate-y-1 active:shadow-sm transition-all flex items-center justify-center text-slate-700 font-bold uppercase tracking-widest group hover:bg-white"
         >
-          <div className="absolute top-0 inset-x-0 h-4 bg-white/40 pointer-events-none" />
-          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 mr-1 -ml-1 sm:-ml-2 group-hover:-translate-x-1 transition-transform stroke-3" />
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 mr-1 -ml-2 group-hover:-translate-x-1 transition-transform" />
           Back
         </button>
 
         <button
           onClick={fetchRooms}
-          className="h-10 w-10 sm:h-14 sm:w-14 bg-[#4ade80] border-2 sm:border-[5px] border-[#166534] rounded-xl sm:rounded-2xl shadow-[0_4px_0_#166534] sm:shadow-[0_6px_0_#166534] active:translate-y-1.5 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden"
+          className="h-12 w-12 sm:h-14 sm:w-14 bg-white/90 backdrop-blur-md border-2 border-white rounded-2xl shadow-lg active:translate-y-1 active:shadow-sm transition-all flex items-center justify-center text-sky-500 hover:text-sky-600 hover:bg-white group"
         >
-          <div className="absolute top-0 inset-x-0 h-4 bg-white/30 pointer-events-none" />
           <RefreshCcw
-            className={`w-5 h-5 sm:w-6 sm:h-6 stroke-3 ${refreshing ? "animate-spin" : ""}`}
+            className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:rotate-180 duration-500 ${refreshing ? "animate-spin" : ""}`}
           />
         </button>
       </div>
 
       <div className="absolute inset-0 z-10 flex flex-col pt-32 pb-12 items-center h-full overflow-y-auto custom-scrollbar px-4 sm:px-8">
-        <h1
-          className="text-5xl sm:text-7xl font-black text-white tracking-tighter uppercase mb-12 drop-shadow-[0_8px_0_#1f2937] text-center"
-          style={{ WebkitTextStroke: "3px #1f2937" }}
-        >
+        <h1 className="text-4xl sm:text-6xl font-black text-white tracking-widest uppercase mb-10 drop-shadow-md text-center">
           Public Lobbies
         </h1>
 
-        <div className="w-full max-w-4xl flex flex-col gap-5 pb-20">
+        <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="bg-white rounded-2xl sm:rounded-3xl border-2 sm:border-[5px] border-[#0f172a] shadow-[0_6px_0_#0f172a] sm:shadow-[0_10px_0_#0f172a] p-3 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 hover:-translate-y-1.5 hover:shadow-[0_8px_0_#0f172a] sm:hover:shadow-[0_16px_0_#0f172a] transition-all relative overflow-hidden group"
+              className="bg-white/80 backdrop-blur-md rounded-[2rem] border-2 border-white shadow-[0_8px_30px_rgba(0,0,0,0.05)] p-6 flex flex-col gap-6 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] transition-all group"
             >
-              <div className="absolute top-0 inset-x-0 h-4 bg-slate-50/80 pointer-events-none" />
-
-              {/* Left: Code & Status */}
-              <div className="flex flex-row sm:flex-col items-center sm:items-start justify-between w-full sm:w-auto sm:min-w-35 gap-2">
-                <div className="flex items-center gap-1.5">
-                  <Hash className="w-6 h-6 text-[#94a3b8] stroke-3" />
-                  <span className="font-black text-3xl sm:text-4xl text-[#1f2937] uppercase tracking-widest leading-none">
+              {/* Top: Code & Status */}
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <Hash className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
+                  <span className="font-black text-2xl sm:text-3xl uppercase tracking-widest leading-none">
                     {room.id}
                   </span>
                 </div>
                 {room.status === "playing" ? (
-                  <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-[#ef4444] border-2 sm:border-[3px] border-[#991b1b] rounded-lg shadow-[0_2px_0_#991b1b] sm:shadow-[0_4px_0_#991b1b]">
-                    <span className="font-black text-white text-[10px] sm:text-xs uppercase tracking-wider">
+                  <div className="px-3 py-1 bg-rose-100 border border-rose-200 rounded-lg shadow-sm">
+                    <span className="font-bold text-rose-600 text-xs uppercase tracking-wider">
                       Playing
                     </span>
                   </div>
                 ) : (
-                  <div className="px-2 sm:px-3 py-0.5 sm:py-1 bg-[#4ade80] border-2 sm:border-[3px] border-[#166534] rounded-lg shadow-[0_2px_0_#166534] sm:shadow-[0_4px_0_#166534]">
-                    <span className="font-black text-white text-[10px] sm:text-xs uppercase tracking-wider">
+                  <div className="px-3 py-1 bg-emerald-100 border border-emerald-200 rounded-lg shadow-sm">
+                    <span className="font-bold text-emerald-600 text-xs uppercase tracking-wider">
                       Waiting
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Middle: Stats & Avatars */}
-              <div className="flex flex-1 w-full items-center justify-between sm:justify-end gap-6 border-y-4 sm:border-y-0 sm:border-l-4 border-dashed border-gray-200 py-4 sm:py-0 sm:pl-6">
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1.5 text-[#64748b] mb-0.5">
-                      <Users className="w-5 h-5 stroke-3" />
-                      <span className="font-black text-sm uppercase">
-                        Players
-                      </span>
-                    </div>
-                    <span className="font-black text-2xl text-[#1f2937] leading-none">
-                      {room.playersCount}
-                      <span className="text-gray-400">/{room.maxPlayers}</span>
+              {/* Middle: Stats */}
+              <div className="flex w-full items-center justify-between bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                <div className="flex flex-col items-center flex-1">
+                  <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                    <Users className="w-4 h-4" />
+                    <span className="font-bold text-xs uppercase tracking-wider">
+                      Players
                     </span>
                   </div>
-
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1.5 text-[#64748b] mb-0.5">
-                      <Clock className="w-5 h-5 stroke-3" />
-                      <span className="font-black text-sm uppercase">
-                        Rounds
-                      </span>
-                    </div>
-                    <span className="font-black text-2xl text-[#1f2937] leading-none">
-                      {room.settings?.rounds || 3}
-                    </span>
-                  </div>
+                  <span className="font-black text-xl text-slate-700 leading-none">
+                    {room.playersCount}
+                    <span className="text-slate-400">/{room.maxPlayers}</span>
+                  </span>
                 </div>
 
+                <div className="w-px h-10 bg-slate-200 mx-2" />
+
+                <div className="flex flex-col items-center flex-1">
+                  <div className="flex items-center gap-1.5 text-slate-500 mb-1">
+                    <Clock className="w-4 h-4" />
+                    <span className="font-bold text-xs uppercase tracking-wider">
+                      Rounds
+                    </span>
+                  </div>
+                  <span className="font-black text-xl text-slate-700 leading-none">
+                    {room.settings?.rounds || 3}
+                  </span>
+                </div>
+              </div>
+
+              {/* Avatars */}
+              <div className="flex justify-center h-12 w-full">
                 {room.players && room.players.length > 0 ? (
-                  <div className="-space-x-3 hidden sm:flex">
-                    {room.players.slice(0, 4).map((p: any, i: number) => (
+                  <div className="-space-x-3 flex">
+                    {room.players.slice(0, 5).map((p: any, i: number) => (
                       <div
                         key={i}
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl border-2 sm:border-[3px] border-[#94a3b8] bg-white shadow-sm overflow-hidden z-10 relative transform rotate-1 hover:rotate-0 transition-transform hover:z-20"
+                        className="w-12 h-12 rounded-xl border-2 border-white bg-slate-100 shadow-sm overflow-hidden z-10 relative hover:-translate-y-1 transition-transform hover:z-20"
                       >
                         {p.avatar ? (
                           <img
@@ -128,35 +122,32 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-[#e2e8f0]" />
+                          <div className="w-full h-full bg-slate-200" />
                         )}
                       </div>
                     ))}
-                    {room.players.length > 4 && (
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl border-2 sm:border-[3px] border-[#94a3b8] bg-[#f1f5f9] flex items-center justify-center shadow-sm z-10 relative transform -rotate-2">
-                        <span className="font-black text-[#475569] text-xs sm:text-base">
-                          +{room.players.length - 4}
+                    {room.players.length > 5 && (
+                      <div className="w-12 h-12 rounded-xl border-2 border-white bg-white/50 backdrop-blur-sm flex items-center justify-center shadow-sm z-10 relative">
+                        <span className="font-black text-slate-500 text-sm">
+                          +{room.players.length - 5}
                         </span>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="hidden sm:block text-gray-400 font-bold uppercase text-sm italic">
+                  <div className="flex items-center justify-center text-slate-400 font-bold uppercase text-sm tracking-widest italic w-full h-full border-2 border-dashed border-slate-200 rounded-xl">
                     Empty Room
                   </div>
                 )}
               </div>
 
-              {/* Right: Action */}
+              {/* Bottom: Action */}
               <button
                 onClick={() => router.push(`/room/${room.id}`)}
-                className="w-full sm:w-40 h-12 sm:h-full min-h-12 sm:min-h-16 shrink-0 bg-[#60a5fa] border-2 sm:border-4 border-[#1d4ed8] rounded-xl sm:rounded-2xl shadow-[0_4px_0_#1d4ed8] sm:shadow-[0_6px_0_#1d4ed8] active:translate-y-1.5 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden group/btn"
+                className="w-full h-14 mt-2 shrink-0 bg-gradient-to-b from-sky-400 to-sky-500 border border-sky-300 rounded-2xl shadow-sm hover:shadow-lg active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden group/btn"
               >
-                <div className="absolute top-0 inset-x-0 h-3 bg-white/30 rounded-t-xl pointer-events-none" />
-                <span
-                  className="font-black text-xl sm:text-2xl uppercase tracking-widest group-hover/btn:scale-110 transition-transform"
-                  style={{ WebkitTextStroke: "1px #1f2937" }}
-                >
+                <div className="absolute top-0 inset-x-0 h-3 bg-white/20 rounded-t-xl pointer-events-none" />
+                <span className="font-black text-lg uppercase tracking-widest drop-shadow-sm group-hover/btn:scale-105 transition-transform">
                   Join
                 </span>
               </button>
@@ -164,26 +155,23 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
           ))}
 
           {rooms.length === 0 && (
-            <div className="w-full text-center p-8 sm:p-12 bg-white/50 backdrop-blur-md rounded-2xl sm:rounded-[3rem] border-2 sm:border-4 border-dashed border-[#94a3b8] mt-8 flex flex-col items-center">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gray-200 rounded-2xl sm:rounded-3xl border-2 sm:border-4 border-[#94a3b8] shadow-inner mb-4 sm:mb-6 flex items-center justify-center transform -rotate-6">
-                <Hash className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 stroke-3" />
+            <div className="w-full text-center p-8 sm:p-12 bg-white/60 backdrop-blur-xl rounded-[2.5rem] border border-white mt-8 flex flex-col items-center shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)]">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl sm:rounded-3xl shadow-sm mb-4 sm:mb-6 flex items-center justify-center transform -rotate-6">
+                <Hash className="w-8 h-8 sm:w-10 sm:h-10 text-slate-300" />
               </div>
-              <h2 className="text-4xl font-black text-[#1f2937] uppercase tracking-wider">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-800 uppercase tracking-widest">
                 No Public Lobbies
               </h2>
-              <p className="text-[#475569] font-bold mt-3 text-xl max-w-md leading-relaxed">
-                It&apos;s quiet right now. Create a new room and invite your friends
+              <p className="text-slate-500 font-bold mt-3 text-base sm:text-lg max-w-md leading-relaxed">
+                It's quiet right now. Create a new room and invite your friends
                 to start drawing!
               </p>
               <button
                 onClick={() => router.push("/")}
-                className="mt-6 sm:mt-8 h-12 sm:h-16 px-6 sm:px-10 bg-[#fbbf24] border-2 sm:border-[5px] border-[#b45309] rounded-xl sm:rounded-2xl shadow-[0_4px_0_#b45309] sm:shadow-[0_8px_0_#b45309] active:translate-y-2 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden group hover:bg-[#f59e0b]"
+                className="mt-6 sm:mt-8 h-12 sm:h-14 px-6 sm:px-8 bg-gradient-to-b from-amber-400 to-amber-500 border border-amber-300 rounded-2xl shadow-sm active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden hover:shadow-md"
               >
-                <div className="absolute top-0 inset-x-0 h-4 bg-white/30 rounded-t-xl pointer-events-none" />
-                <span
-                  className="font-black text-xl sm:text-2xl uppercase tracking-widest"
-                  style={{ WebkitTextStroke: "1px #1f2937" }}
-                >
+                <div className="absolute top-0 inset-x-0 h-4 bg-white/20 rounded-t-2xl pointer-events-none" />
+                <span className="font-black text-lg sm:text-xl uppercase tracking-widest drop-shadow-sm">
                   Create Room
                 </span>
               </button>
@@ -191,25 +179,6 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
           )}
         </div>
       </div>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 12px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #1f2937;
-          border-radius: 8px;
-          border: 2px solid rgba(255, 255, 255, 0.2);
-        }
-      `,
-        }}
-      />
     </div>
   );
 }
