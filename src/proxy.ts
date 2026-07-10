@@ -5,7 +5,9 @@ import { CURRENT_URL_HEADER, ORIGIN_HEADER } from "./config";
 export async function proxy(request: NextRequest) {
   const hostHeader =
     request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  const proto = request.headers.get("x-forwarded-proto") ?? process.env.NODE_ENV === "production" ? "https" : "http";
+  const proto =
+    request.headers.get("x-forwarded-proto") ??
+    (process.env.NODE_ENV === "production" ? "https" : "http");
   const fullUrl = `${proto}://${hostHeader}${request.nextUrl.pathname}`;
   const origin = `${proto}://${hostHeader}`;
   const headers = new Headers(request.headers);
