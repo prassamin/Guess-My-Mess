@@ -14,7 +14,7 @@ import GameArea from "@/components/room/GameArea";
 import AuthBlock from "@/components/lobby/AuthBlock";
 import { useRoomStore } from "@/store/room-store";
 import { useRouter } from "@bprogress/next";
-import { playAudio } from "@/utils/audio";
+import { playAudio } from "@/lib/audio";
 import { NEXT_PUBLIC_SOCKET_URL } from "@/config/env";
 import { useAppStore } from "@/store/app-store";
 
@@ -121,15 +121,21 @@ export default function RoomView({ roomId }: { roomId: string }) {
   useEffect(() => {
     if (!userId || showJoinModal) return;
 
-    const socket = io(NEXT_PUBLIC_SOCKET_URL.replace("ws://", "http://").replace("wss://", "https://"), {
-      path: "/v1/game/ws",
-      query: {
-        roomId,
-        userId,
-        name: userNameRef.current || "",
-        avatar: userAvatarRef.current || "",
+    const socket = io(
+      NEXT_PUBLIC_SOCKET_URL.replace("ws://", "http://").replace(
+        "wss://",
+        "https://",
+      ),
+      {
+        path: "/v1/game/ws",
+        query: {
+          roomId,
+          userId,
+          name: userNameRef.current || "",
+          avatar: userAvatarRef.current || "",
+        },
       },
-    });
+    );
 
     socket.on("connect", () => {
       console.log("Connected to room server!");

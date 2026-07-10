@@ -130,7 +130,7 @@ export default function AuthBlock({
                   console.error("Error logging in:", error);
                   setGoogleLoading(false);
                 },
-                redirectTo: `${window.location.origin}/auth/callback/?next=${window.location.pathname}`,
+                redirectTo: `${window.url.origin}/auth/callback/?next=${window.url.pathname}`,
               })
             }
             disabled={googleLoading || guestLoading}

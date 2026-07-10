@@ -51,7 +51,7 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="bg-white/80 backdrop-blur-md rounded-[2rem] border-2 border-white shadow-[0_8px_30px_rgba(0,0,0,0.05)] p-6 flex flex-col gap-6 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] transition-all group"
+              className="bg-white/80 backdrop-blur-md rounded-4xl border-2 border-white shadow-[0_8px_30px_rgba(0,0,0,0.05)] p-6 flex flex-col gap-6 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] transition-all group"
             >
               {/* Top: Code & Status */}
               <div className="flex items-center justify-between w-full">
@@ -144,7 +144,7 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
               {/* Bottom: Action */}
               <button
                 onClick={() => router.push(`/room/${room.id}`)}
-                className="w-full h-14 mt-2 shrink-0 bg-gradient-to-b from-sky-400 to-sky-500 border border-sky-300 rounded-2xl shadow-sm hover:shadow-lg active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden group/btn"
+                className="w-full h-14 mt-2 shrink-0 bg-linear-to-b from-sky-400 to-sky-500 border border-sky-300 rounded-2xl shadow-sm hover:shadow-lg active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden group/btn"
               >
                 <div className="absolute top-0 inset-x-0 h-3 bg-white/20 rounded-t-xl pointer-events-none" />
                 <span className="font-black text-lg uppercase tracking-widest drop-shadow-sm group-hover/btn:scale-105 transition-transform">
@@ -163,12 +163,12 @@ export default function RoomsView({ initialRooms }: { initialRooms: any[] }) {
                 No Public Lobbies
               </h2>
               <p className="text-slate-500 font-bold mt-3 text-base sm:text-lg max-w-md leading-relaxed">
-                It's quiet right now. Create a new room and invite your friends
+                It&apos;s quiet right now. Create a new room and invite your friends
                 to start drawing!
               </p>
               <button
                 onClick={() => router.push("/")}
-                className="mt-6 sm:mt-8 h-12 sm:h-14 px-6 sm:px-8 bg-gradient-to-b from-amber-400 to-amber-500 border border-amber-300 rounded-2xl shadow-sm active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden hover:shadow-md"
+                className="mt-6 sm:mt-8 h-12 sm:h-14 px-6 sm:px-8 bg-linear-to-b from-amber-400 to-amber-500 border border-amber-300 rounded-2xl shadow-sm active:translate-y-1 active:shadow-none transition-all flex items-center justify-center text-white relative overflow-hidden hover:shadow-md"
               >
                 <div className="absolute top-0 inset-x-0 h-4 bg-white/20 rounded-t-2xl pointer-events-none" />
                 <span className="font-black text-lg sm:text-xl uppercase tracking-widest drop-shadow-sm">

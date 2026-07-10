@@ -3,7 +3,7 @@ import { Clock, CheckCircle } from "lucide-react";
 import DrawingCanvas from "./DrawingCanvas";
 import { useRoomStore } from "@/store/room-store";
 import { useAppStore } from "@/store/app-store";
-import { playAudio } from "@/utils/audio";
+import { playAudio } from "@/lib/audio";
 
 export default function GameArea() {
   const { user } = useAppStore();
@@ -320,8 +320,8 @@ export default function GameArea() {
                         p.lastRoundPoints > 0
                           ? "text-[#4ade80]"
                           : p.lastRoundPoints < 0
-                          ? "text-[#f87171]"
-                          : "text-gray-400"
+                            ? "text-[#f87171]"
+                            : "text-gray-400"
                       }`}
                     >
                       {p.lastRoundPoints > 0 ? "+" : ""}
