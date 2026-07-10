@@ -121,7 +121,9 @@ export default function AuthBlock({
           </div>
 
           <button
-            onClick={() =>
+            onClick={() => {
+              const redirectTo = `${window.url.origin}/auth/callback/?next=${window.url.pathname}`;
+              console.log(redirectTo);
               createOAuth("google", {
                 onStarting() {
                   setGoogleLoading(true);
@@ -130,9 +132,9 @@ export default function AuthBlock({
                   console.error("Error logging in:", error);
                   setGoogleLoading(false);
                 },
-                redirectTo: `${window.url.origin}/auth/callback/?next=${window.url.pathname}`,
-              })
-            }
+                redirectTo,
+              });
+            }}
             disabled={googleLoading || guestLoading}
             className="relative w-full h-14 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 shadow-sm active:scale-95 transition-all flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
           >
