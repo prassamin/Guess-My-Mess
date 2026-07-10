@@ -123,8 +123,8 @@ export default function AuthBlock({
           <button
             onClick={() => {
               const redirectTo = `${
-                window.url.origin
-              }/auth/callback?next=${encodeURIComponent(window.url.pathname)}`;
+                window.location.origin
+              }/auth/callback?next=${encodeURIComponent(window.location.pathname)}`;
               createOAuth("google", {
                 onStarting() {
                   setGoogleLoading(true);

@@ -51,7 +51,7 @@ export default function WaitingLobby({
   };
 
   const handleCopyLink = () => {
-    const link = `${window.url.origin}/room/${roomCode}`;
+    const link = `${window.location.origin}/room/${roomCode}`;
     navigator.clipboard.writeText(link);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
