@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
   const proto =
     request.headers.get("x-forwarded-proto") ??
     (process.env.NODE_ENV === "production" ? "https" : "http");
-  const fullUrl = `${proto}://${hostHeader}${request.nextUrl.pathname}`;
+  const fullUrl = `${proto}://${hostHeader}${request.nextUrl.pathname}${request.nextUrl.search}`;
   const origin = `${proto}://${hostHeader}`;
   const headers = new Headers(request.headers);
   headers.set(ORIGIN_HEADER, origin);

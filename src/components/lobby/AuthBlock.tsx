@@ -122,7 +122,7 @@ export default function AuthBlock({
 
           <button
             onClick={() => {
-              const redirectTo = `https://gmm.pras.me/auth/callback?next=/`;
+              const redirectTo = `${window.location.origin}/auth/callback?next=${window.location.pathname}`;
               createOAuth("google", {
                 onStarting() {
                   setGoogleLoading(true);

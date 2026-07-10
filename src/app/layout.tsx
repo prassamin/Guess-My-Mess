@@ -90,17 +90,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const origin = await getOrigin();
-
   return (
     <html lang="en" className="scrollbar-hidden">
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.url = new URL("${origin}");`,
-          }}
-        />
-      </head>
       <body
         className={`${fredoka.className} bg-linear-to-b from-[#0ea5e9] via-[#38bdf8] to-[#bae6fd] text-slate-800 min-h-dvh scrollbar-hidden`}
       >
